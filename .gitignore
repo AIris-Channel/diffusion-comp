@@ -1,0 +1,15 @@
+workdir/
+data/
+models/
+logs/
+log*/
+*__pycache__
+model_output
+outputs
+bench_samples_standard/
+train_data/
+## weights anf lib
+.cache/
+.insightface
+models.zip
+train_data.zip
