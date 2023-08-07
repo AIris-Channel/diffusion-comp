@@ -8,7 +8,8 @@ import PIL
 from PIL import Image
 from torch.utils.data import Dataset
 import random
-
+import torch
+import gc
 
 
 training_templates_smallest = [
@@ -192,24 +193,62 @@ class PersonalizedBase(Dataset):
             self._length = self.num_images * repeats
 
         self.reg = reg
+        
+    def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
+        import os
+        os.system("gpustat")
+        self.datas = []
+        for i in range(self.num_images):
+            pil_image = Image.open(self.image_paths[i % self.num_images]).convert("RGB")
+
+            placeholder_string = self.placeholder_token
+            if self.coarse_class_text:
+                placeholder_string = f"{self.coarse_class_text} {placeholder_string}"
+
+            if not self.reg:
+                text = random.choice(training_templates_smallest).format(placeholder_string)
+            else:
+                text = random.choice(reg_templates_smallest).format(placeholder_string)
+
+            # default to score-sde preprocessing
+            img = self.transform(pil_image)
+            img4clip = self.transform_clip(pil_image)
+            
+            img = img.to("cuda").unsqueeze(0)
+            img4clip = img4clip.to("cuda").unsqueeze(0)
+            
+            
+            with torch.no_grad():
+                z = autoencoder.encode(img)
+                clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
+                text = clip_text_model.encode(text)
+                text = caption_decoder.encode_prefix(text)
+            data_type = 0
+            z = z.to("cpu")
+            clip_img = clip_img.to("cpu")
+            text = text.to("cpu")
+            self.datas.append((z,clip_img,text,data_type))
+        print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
+        autoencoder = autoencoder.to("cpu")
+        clip_img_model = clip_img_model.to("cpu")
+        clip_text_model = clip_text_model.to("cpu")
+        caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
+        del caption_decoder
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
+        os.system("gpustat")
+        
+        
 
     def __len__(self):
         return self._length
 
     def __getitem__(self, i):
-        pil_image = Image.open(self.image_paths[i % self.num_images]).convert("RGB")
 
-        placeholder_string = self.placeholder_token
-        if self.coarse_class_text:
-            placeholder_string = f"{self.coarse_class_text} {placeholder_string}"
-
-        if not self.reg:
-            text = random.choice(training_templates_smallest).format(placeholder_string)
-        else:
-            text = random.choice(reg_templates_smallest).format(placeholder_string)
-
-        # default to score-sde preprocessing
-        img = self.transform(pil_image)
-        img4clip = self.transform_clip(pil_image)
+        z = self.datas[ i % self.num_images ][0].squeeze(0)
+        clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
+        text = self.datas[ i % self.num_images ][2].squeeze(0)
+        data_type = self.datas[ i % self.num_images ][3]
         
-        return img, img4clip, text, 0
+        return z,clip_img,text,data_type

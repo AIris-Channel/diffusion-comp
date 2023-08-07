@@ -59,6 +59,7 @@ def train(config):
     """
     # process data
     train_dataset = PersonalizedBase(config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl")
+    train_dataset.prepare(autoencoder, clip_img_model, clip_text_model, caption_decoder)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,
@@ -66,6 +67,7 @@ def train(config):
                                       drop_last=True
                                       )
 
+    
     train_data_generator = utils.get_data_generator(train_dataset_loader, enable_tqdm=accelerator.is_main_process, desc='train')
 
     logging.info("saving meta data")
@@ -79,17 +81,13 @@ def train(config):
     logging.info(f'use {schedule}')
 
     def train_step():
-        metrics = dict()
-        img, img4clip, text, data_type = next(train_data_generator)
-        img = img.to(device)
-        img4clip = img4clip.to(device)
+        metrics = dict()        
+        z,clip_img,text,data_type = next(train_data_generator)
+        z = z.to(device)
+        clip_img  = clip_img.to(device)
+        text = text.to(device)
         data_type = data_type.to(device)
 
-        with torch.no_grad():
-            z = autoencoder.encode(img)
-            clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
-            text = clip_text_model.encode(text)
-            text = caption_decoder.encode_prefix(text)
 
 
         loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
