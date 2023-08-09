@@ -113,8 +113,9 @@ def train(config):
         set_seed(42)
         config2 = get_config()
         for data_name in ['boy1','boy2','girl1','girl2']:
-            if data_name in config.log_dir:
-                config2.output_path = os.path.join('model_output', data_name)
+            if data_name in config.workdir:
+                config2.output_path = os.path.join('outputs', data_name)
+                prompt_path = f'eval_prompts/{data_name}.json'
         config2.n_samples = 3
         config2.n_iter = 1
         device = "cuda"
@@ -129,7 +130,7 @@ def train(config):
         nnet.to(device)
         
         # 基于给定的prompt进行生成
-        prompts = json.load(open(config.log_dir, "r"))
+        prompts = json.load(open(prompt_path, "r"))
         for prompt_index, prompt in enumerate(prompts):
             # 根据训练策略
             if "boy" in prompt:

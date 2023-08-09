@@ -169,7 +169,7 @@ class PersonalizedBase(Dataset):
 
         self.data_root = data_root
 
-        self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if not file_path.endswith(".txt")]
+        self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
 
         self.num_images = len(self.image_paths)
         self._length = self.num_images 
