@@ -107,10 +107,46 @@ def train(config):
     @torch.no_grad()
     @torch.autocast(device_type='cuda')
     def eval(total_step):
-        """
-        write evaluation code here
-        """
+        from configs.sample_config import get_config
+        from sample import set_seed, sample
+        import json
+        set_seed(42)
+        config2 = get_config()
+        for data_name in ['boy1','boy2','girl1','girl2']:
+            if data_name in config.log_dir:
+                config2.output_path = os.path.join('model_output', data_name)
+        config2.n_samples = 3
+        config2.n_iter = 1
+        device = "cuda"
 
+        # init models
+        autoencoder = libs.autoencoder.get_model(**config2.autoencoder)
+        clip_text_model = FrozenCLIPEmbedder(version=config2.clip_text_model, device=device)
+        clip_text_model.to("cpu")
+
+        clip_text_model.to(device)
+        autoencoder.to(device)
+        nnet.to(device)
+        
+        # 基于给定的prompt进行生成
+        prompts = json.load(open(config.log_dir, "r"))
+        for prompt_index, prompt in enumerate(prompts):
+            # 根据训练策略
+            if "boy" in prompt:
+                prompt = prompt.replace("boy", "sks boy")
+            else:
+                prompt = prompt.replace("girl", "sks girl")
+
+            config2.prompt = prompt
+            print("sampling with prompt:", prompt)
+            sample(prompt_index, config2, nnet, clip_text_model, autoencoder, device)
+        
+        from score import score
+        scores = score('./train_data/', './eval_prompts/', './outputs/')
+        with open(os.path.join(config.log_dir, 'score.txt'), 'a') as f:
+            f.write(f'{total_step}\n')
+            for k, v in scores.items():
+                f.write(f'{k}: {v}\n')
         return
 
     def loop():
