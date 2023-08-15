@@ -209,8 +209,8 @@ class PersonalizedBase(Dataset):
 
         self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
 
-        self.num_images = len(self.image_paths)
-        self._length = self.num_images + len(imagenet_templates_small)
+        self.num_images = len(self.image_paths) + len(imagenet_templates_small)
+        self._length = self.num_images
 
         self.placeholder_token = class_word
         self.resolution = resolution
@@ -272,6 +272,7 @@ class PersonalizedBase(Dataset):
         device = "cuda"
         for template in imagenet_templates_small:
             text = template.format(self.placeholder_token)
+            print(f"Generating for text: {text}")
             text = clip_text_model.encode(text)
             text = caption_decoder.encode_prefix(text)
             data_type = 1
