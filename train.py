@@ -25,6 +25,7 @@ import datetime
 from pathlib import Path
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
+import copy
 
 
 
@@ -44,6 +45,7 @@ def train(config):
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
 
     nnet, optimizer = accelerator.prepare(train_state.nnet, train_state.optimizer)
+    # nnet_original = copy.deepcopy(nnet)
     nnet.to(device)
     lr_scheduler = train_state.lr_scheduler
 
@@ -59,7 +61,7 @@ def train(config):
     """
     # process data
     train_dataset = PersonalizedBase(config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl")
-    train_dataset.prepare(autoencoder, clip_img_model, clip_text_model, caption_decoder)
+    train_dataset.prepare(autoencoder, clip_img_model, clip_text_model, caption_decoder, nnet)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,
@@ -123,7 +125,6 @@ def train(config):
         # init models
         autoencoder = libs.autoencoder.get_model(**config2.autoencoder)
         clip_text_model = FrozenCLIPEmbedder(version=config2.clip_text_model, device=device)
-        clip_text_model.to("cpu")
 
         clip_text_model.to(device)
         autoencoder.to(device)

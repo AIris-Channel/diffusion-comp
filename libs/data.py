@@ -10,6 +10,12 @@ from torch.utils.data import Dataset
 import random
 import torch
 import gc
+import cv2
+from libs.dpm_solver_pp import NoiseScheduleVP, DPM_Solver
+import time
+import einops
+from sample import prepare_contexts, stable_diffusion_beta_schedule
+from configs.sample_config import get_config
 
 
 training_templates_smallest = [
@@ -138,12 +144,44 @@ per_img_token_list = [
     'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת',
 ]
 
+face_cascade = cv2.CascadeClassifier('libs/haarcascade_frontalface_default.xml')
+
 def _convert_image_to_rgb(image):
     return image.convert("RGB")
+
+def _crop_human_face(image):
+    image = transforms.Resize(512)(image)
+    gray = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
+    faces = face_cascade.detectMultiScale(
+        gray,
+        scaleFactor = 1.15,
+        minNeighbors = 5,
+        minSize = (5,5)
+    )
+    # if len(faces) == 0:
+    #     return image
+    # x = y = w = h = 0
+    # for xx, yy, ww, hh in faces:
+    #     x += xx
+    #     y += yy
+    #     w = max(w, ww)
+    #     h = max(h, hh)
+    # x //= len(faces)
+    # y //= len(faces)
+    if len(faces) != 1:
+        return image
+    x, y, w, h = faces[0]
+    x = max(0, x - w)
+    y = max(0, y - h)
+    w = min(image.width, w * 3)
+    h = min(image.height, h * 3)
+    return image.crop((x, y, x+w, y+h))
+
 
 
 def _transform(n_px):
     return transforms.Compose([
+        _crop_human_face,
         transforms.Resize(n_px, interpolation=transforms.InterpolationMode.BICUBIC),
         transforms.CenterCrop(n_px),
         _convert_image_to_rgb,
@@ -172,7 +210,7 @@ class PersonalizedBase(Dataset):
         self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
 
         self.num_images = len(self.image_paths)
-        self._length = self.num_images 
+        self._length = self.num_images + len(imagenet_templates_small)
 
         self.placeholder_token = class_word
         self.resolution = resolution
@@ -181,7 +219,7 @@ class PersonalizedBase(Dataset):
         
         
         self.transform_clip = _transform(224)
-        self.transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
+        self.transform = transforms.Compose([_crop_human_face, transforms.Resize(resolution), transforms.CenterCrop(resolution),
                                              transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
 
         self.coarse_class_text = coarse_class_text
@@ -194,7 +232,7 @@ class PersonalizedBase(Dataset):
 
         self.reg = reg
         
-    def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
+    def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder,nnet):
         import os
         os.system("gpustat")
         self.datas = []
@@ -228,6 +266,103 @@ class PersonalizedBase(Dataset):
             clip_img = clip_img.to("cpu")
             text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
+        
+        # 原模型生成的数据
+        config = get_config()
+        device = "cuda"
+        for template in imagenet_templates_small:
+            text = template.format(self.placeholder_token)
+            text = clip_text_model.encode(text)
+            text = caption_decoder.encode_prefix(text)
+            data_type = 1
+
+            _betas = stable_diffusion_beta_schedule()
+            N = len(_betas)
+
+            empty_context = clip_text_model.encode([''])[0]
+
+            def split(x):
+                C, H, W = config.z_shape
+                z_dim = C * H * W
+                z, clip_img = x.split([z_dim, config.clip_img_dim], dim=1)
+                z = einops.rearrange(z, 'B (C H W) -> B C H W', C=C, H=H, W=W)
+                clip_img = einops.rearrange(clip_img, 'B (L D) -> B L D', L=1, D=config.clip_img_dim)
+                return z, clip_img
+
+
+            def combine(z, clip_img):
+                z = einops.rearrange(z, 'B C H W -> B (C H W)')
+                clip_img = einops.rearrange(clip_img, 'B L D -> B (L D)')
+                return torch.concat([z, clip_img], dim=-1)
+
+
+            def t2i_nnet(x, timesteps, text):  # text is the low dimension version of the text clip embedding
+                """
+                1. calculate the conditional model output
+                2. calculate unconditional model output
+                    config.sample.t2i_cfg_mode == 'empty_token': using the original cfg with the empty string
+                    config.sample.t2i_cfg_mode == 'true_uncond: using the unconditional model learned by our method
+                3. return linear combination of conditional output and unconditional output
+                """
+                z, clip_img = split(x)
+
+                t_text = torch.zeros(timesteps.size(0), dtype=torch.int, device=device)
+
+                z_out, clip_img_out, text_out = nnet(z, clip_img, text=text, t_img=timesteps, t_text=t_text,
+                                                    data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+                x_out = combine(z_out, clip_img_out)
+
+                if config.sample.scale == 0.:
+                    return x_out
+
+                if config.sample.t2i_cfg_mode == 'empty_token':
+                    _empty_context = einops.repeat(empty_context, 'L D -> B L D', B=x.size(0))
+                    _empty_context = caption_decoder.encode_prefix(_empty_context)
+                    z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=_empty_context, t_img=timesteps, t_text=t_text,
+                                                                            data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+                    x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
+                elif config.sample.t2i_cfg_mode == 'true_uncond':
+                    text_N = torch.randn_like(text)  # 3 other possible choices
+                    z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=text_N, t_img=timesteps, t_text=torch.ones_like(timesteps) * N,
+                                                                            data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+                    x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
+                else:
+                    raise NotImplementedError
+
+                return x_out + config.sample.scale * (x_out - x_out_uncond)
+
+            _n_samples = text.size(0)
+
+
+            def sample_fn(device, **kwargs):
+                _z_init = torch.randn(_n_samples, *config.z_shape, device=device)
+                _clip_img_init = torch.randn(_n_samples, 1, config.clip_img_dim, device=device)
+                _x_init = combine(_z_init, _clip_img_init)
+
+                noise_schedule = NoiseScheduleVP(schedule='discrete', betas=torch.tensor(_betas, device=device).float())
+
+                def model_fn(x, t_continuous):
+                    t = t_continuous * N
+                    return t2i_nnet(x, t, **kwargs)
+
+                dpm_solver = DPM_Solver(model_fn, noise_schedule, predict_x0=True, thresholding=False)
+                with torch.no_grad(), torch.autocast(device_type="cuda" if "cuda" in str(device) else "cpu"):
+                    start_time = time.time()
+                    x = dpm_solver.sample(_x_init, steps=config.sample.sample_steps, eps=1. / N, T=1.)
+                    end_time = time.time()
+                    print(f'\ngenerate {_n_samples} samples with {config.sample.sample_steps} steps takes {end_time - start_time:.2f}s')
+
+                _z, _clip_img = split(x)
+                return _z, _clip_img
+
+            z, clip_img = sample_fn(device='cuda', text=text)
+            
+            z = z.to('cpu')
+            clip_img = clip_img.to('cpu')
+            text = text.to('cpu')
+            self.datas.append((z,clip_img,text,data_type))
+            
+
         print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
         autoencoder = autoencoder.to("cpu")
         clip_img_model = clip_img_model.to("cpu")
