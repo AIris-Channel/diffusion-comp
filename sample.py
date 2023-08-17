@@ -265,15 +265,16 @@ def get_args():
     parser.add_argument("--restore_path", type=str, default="models/uvit_v1.pth", help="nnet path to resume")
     parser.add_argument("--prompt_path", type=str, default="eval_prompts/boy1.json", help="file contains prompts")
     parser.add_argument("--output_path", type=str, default="outputs/boy1", help="output dir for generated images")
+    parser.add_argument("--seed", type=int, default=42, help="random seed")  # 添加seed参数
     return parser.parse_args()
 
 
 def main(argv=None):
     # config args
     from configs.sample_config import get_config
-    set_seed(42)
-    config = get_config()
     args = get_args()
+    set_seed(args.seed)
+    config = get_config()
     config.output_path = args.output_path
     config.nnet_path = os.path.join(args.restore_path, "final.ckpt",'nnet.pth')
     config.n_samples = 3
