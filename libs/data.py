@@ -209,7 +209,7 @@ class PersonalizedBase(Dataset):
 
         self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
 
-        self.num_images = len(self.image_paths) + len(imagenet_templates_small)
+        self.num_images = len(self.image_paths)
         self._length = self.num_images
 
         self.placeholder_token = class_word
@@ -362,6 +362,7 @@ class PersonalizedBase(Dataset):
             clip_img = clip_img.to('cpu')
             text = text.to('cpu')
             self.datas.append((z,clip_img,text,data_type))
+            self.num_images += len(imagenet_templates_small)
             
 
         print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
