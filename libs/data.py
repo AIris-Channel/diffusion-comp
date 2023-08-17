@@ -195,8 +195,6 @@ class PersonalizedBase(Dataset):
         self.reg = reg
         
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
-        import os
-        os.system("gpustat")
         self.datas = []
         for i in range(self.num_images):
             pil_image = Image.open(self.image_paths[i % self.num_images]).convert("RGB")
@@ -237,7 +235,6 @@ class PersonalizedBase(Dataset):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
-        os.system("gpustat")
         
         
 
