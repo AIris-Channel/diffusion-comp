@@ -27,39 +27,46 @@ from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
 
 
-
 def train(config):
-    
     """
     prepare models
     准备各类需要的模型
     """
-    accelerator, device = utils.setup(config)
+    wandb.login()
+    wandb.init(project='diffusion-comp', config=config)
     
+    accelerator, device = utils.setup(config)
+
     train_state = utils.initialize_train_state(config, device, uvit_class=UViT)
     logging.info(f'load nnet from {config.nnet_path}')
-    train_state.nnet.load_state_dict(torch.load(config.nnet_path, map_location='cpu'), False)
-
+    train_state.nnet.load_state_dict(torch.load(
+        config.nnet_path, map_location='cpu'), False)
 
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
 
-    nnet, optimizer = accelerator.prepare(train_state.nnet, train_state.optimizer)
+    nnet, optimizer = accelerator.prepare(
+        train_state.nnet, train_state.optimizer)
+    
+    
     nnet.to(device)
     lr_scheduler = train_state.lr_scheduler
 
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
-    
-    clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device)
-    clip_img_model, clip_img_model_preprocess = clip.load(config.clip_img_model, jit=False)
+
+    clip_text_model = FrozenCLIPEmbedder(
+        version=config.clip_text_model, device=device)
+    clip_img_model, clip_img_model_preprocess = clip.load(
+        config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
-    
 
     """
     处理数据部分
     """
     # process data
-    train_dataset = PersonalizedBase(config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl")
-    train_dataset.prepare(autoencoder, clip_img_model, clip_text_model, caption_decoder)
+    train_dataset = PersonalizedBase(
+        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl")
+    train_dataset.prepare(autoencoder, clip_img_model,
+                          clip_text_model, caption_decoder)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,
@@ -67,40 +74,43 @@ def train(config):
                                       drop_last=True
                                       )
 
-    
-    train_data_generator = utils.get_data_generator(train_dataset_loader, enable_tqdm=accelerator.is_main_process, desc='train')
+    train_data_generator = utils.get_data_generator(
+        train_dataset_loader, enable_tqdm=accelerator.is_main_process, desc='train')
 
     logging.info("saving meta data")
     os.makedirs(config.meta_dir, exist_ok=True)
     with open(os.path.join(config.meta_dir, "config.yaml"), "w") as f:
         f.write(yaml.dump(config))
         f.close()
-    
+
     _betas = stable_diffusion_beta_schedule()
     schedule = Schedule(_betas)
     logging.info(f'use {schedule}')
 
     def train_step():
-        metrics = dict()        
-        z,clip_img,text,data_type = next(train_data_generator)
+        metrics = dict()
+        z, clip_img, text, data_type = next(train_data_generator)
         z = z.to(device)
-        clip_img  = clip_img.to(device)
+        clip_img = clip_img.to(device)
         text = text.to(device)
         data_type = data_type.to(device)
 
-
-
-        loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
-        accelerator.backward(loss.mean())
+        with torch.cuda.amp.autocast():
+            loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
+                img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
+            accelerator.backward(loss.mean())
         optimizer.step()
         lr_scheduler.step()
         train_state.ema_update(config.get('ema_rate', 0.9999))
         train_state.step += 1
-        optimizer.zero_grad()
-        metrics['loss'] = accelerator.gather(loss.detach().mean()).mean().item()
-        metrics['loss_img'] = accelerator.gather(loss_img.detach().mean()).mean().item()
-        metrics['loss_clip_img'] = accelerator.gather(loss_clip_img.detach().mean()).mean().item()
-        metrics['scale'] = accelerator.scaler.get_scale()
+        optimizer.zero_grad(set_to_none=True)
+        metrics['loss'] = accelerator.gather(
+            loss.detach().mean()).mean().item()
+        metrics['loss_img'] = accelerator.gather(
+            loss_img.detach().mean()).mean().item()
+        metrics['loss_clip_img'] = accelerator.gather(
+            loss_clip_img.detach().mean()).mean().item()
+        # metrics['scale'] = accelerator.scaler.get_scale()
         metrics['lr'] = train_state.optimizer.param_groups[0]['lr']
         return metrics
 
@@ -111,8 +121,51 @@ def train(config):
         write evaluation code here
         """
 
-        return
+        from configs.sample_config import get_config
+        from sample import set_seed, sample
+        import json
+        set_seed(42)
+        eval_config = get_config()
+        for data_name in ['boy1','boy2','girl1','girl2']:
+            if data_name in config.workdir:
+                eval_config.output_path = os.path.join('outputs', data_name)
+                prompt_path = f'eval_prompts/{data_name}.json'
+                break
+        eval_config.n_samples = 3
+        eval_config.n_iter = 1
+        
+        autoencoder.to(device)
+        clip_text_model.to(device)
+        
+        torch.cuda.empty_cache()
+        
+        # 基于给定的prompt进行生成
+        prompts = json.load(open(prompt_path, "r"))
+        for prompt_index, prompt in enumerate(prompts):
+            # 根据训练策略
+            if "boy" in prompt:
+                prompt = prompt.replace("boy", "sks boy")
+            else:
+                prompt = prompt.replace("girl", "sks girl")
 
+            eval_config.prompt = prompt
+            print("sampling with prompt:", prompt)
+            with torch.no_grad():
+                sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
+
+        from score import score_one_task
+        scores = score_one_task('./train_data/', './eval_prompts/', './outputs/', data_name)
+        with open(os.path.join(config.log_dir, 'score.txt'), 'a') as f:
+            f.write(f'{total_step}\n')
+            for k, v in scores.items():\
+                f.write(f'{k}: {v}\n')
+        print(f"eval score: {scores}")
+        
+        clip_text_model.to("cpu")
+        autoencoder.to("cpu")
+        
+        return scores
+        
     def loop():
         log_step = 0
         eval_step = 0
@@ -125,23 +178,30 @@ def train(config):
             if accelerator.is_main_process:
                 nnet.eval()
                 total_step = train_state.step * config.batch_size
+                if total_step >= eval_step:
+                    scores = eval(total_step)
+                    eval_step += config.eval_interval
+                    
                 if total_step >= log_step:
-                    logging.info(utils.dct2str(dict(step=total_step, **metrics)))
-                    wandb.log(utils.add_prefix(metrics, 'train'), step=total_step)
+                    logging.info(utils.dct2str(
+                        dict(step=total_step, **metrics)))
+                    wandb.log(utils.add_prefix(
+                        metrics, 'train'), step=total_step)
+                    wandb.log(utils.add_prefix(
+                        scores, 'eval'), step=total_step)
                     log_step += config.log_interval
 
-                if total_step >= eval_step:
-                    eval(total_step)
-                    eval_step += config.eval_interval
+      
 
                 if total_step >= save_step:
                     logging.info(f'Save and eval checkpoint {total_step}...')
-                    train_state.save(os.path.join(config.ckpt_root, f'{total_step:04}.ckpt'))
+                    train_state.save(os.path.join(
+                        config.ckpt_root, f'{total_step:04}.ckpt'))
                     save_step += config.save_interval
 
             accelerator.wait_for_everyone()
-            
-            if total_step  >= config.max_step:
+
+            if total_step >= config.max_step:
                 logging.info(f"saving final ckpts to {config.outdir}...")
                 train_state.save(os.path.join(config.outdir, 'final.ckpt'))
                 break
@@ -149,20 +209,22 @@ def train(config):
     loop()
 
 
-
-
 def get_args():
     parser = argparse.ArgumentParser()
     # key args
-    parser.add_argument('-d', '--data', type=str, default="train_data/boy1", help="datadir")
-    parser.add_argument('-o', "--outdir", type=str, default="model_ouput/boy1", help="output of model")
-    
-    # args of logging
-    parser.add_argument("--logdir", type=str, default="logs", help="the dir to put logs")
-    parser.add_argument("--nnet_path", type=str, default="models/uvit_v1.pth", help="nnet path to resume")
+    parser.add_argument('-d', '--data', type=str,
+                        default="train_data/boy1", help="datadir")
+    parser.add_argument('-o', "--outdir", type=str,
+                        default="model_ouput/boy1", help="output of model")
 
-    
+    # args of logging
+    parser.add_argument("--logdir", type=str, default="logs",
+                        help="the dir to put logs")
+    parser.add_argument("--nnet_path", type=str,
+                        default="models/uvit_v1.pth", help="nnet path to resume")
+
     return parser.parse_args()
+
 
 def main():
     # 赛手需要根据自己的需求修改config file
@@ -176,7 +238,8 @@ def main():
     data_name = Path(config.data).stem
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-    config.workdir = os.path.join(config.log_dir, f"{config_name}-{data_name}-{now}")
+    config.workdir = os.path.join(
+        config.log_dir, f"{config_name}-{data_name}-{now}")
     config.ckpt_root = os.path.join(config.workdir, 'ckpts')
     config.meta_dir = os.path.join(config.workdir, "meta")
     config.nnet_path = args.nnet_path
