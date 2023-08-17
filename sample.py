@@ -272,7 +272,10 @@ def get_args():
 def main(argv=None):
     # config args
     from configs.sample_config import get_config
-    args = get_args()
+    if argv is None:
+        args = get_args()
+    else:
+        args = argv
     set_seed(args.seed)
     config = get_config()
     config.output_path = args.output_path
