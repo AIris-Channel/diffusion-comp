@@ -7,6 +7,7 @@ log*/
 model_output
 outputs
 reg_outputs
+test_outputs
 bench_samples_standard/
 train_data/
 ## weights anf lib
@@ -14,3 +15,4 @@ train_data/
 .insightface
 models.zip
 train_data.zip
+wandb

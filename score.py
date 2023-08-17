@@ -141,6 +141,78 @@ class Evaluator():
 def read_img_pil(p):
     return Image.open(p)
 
+def score_one_task(dataset, prompts, outputs, task):
+    eval = Evaluator()
+
+    # folder check
+    task_dataset = os.path.join(dataset, f'{task}')
+    assert os.path.exists(
+        task_dataset), f"Missing Dataset folder: {task_dataset}"
+    task_prompt = os.path.join(prompts, f'{task}.json')
+    assert os.path.exists(
+        task_dataset), f"Missing Prompt file: {task_prompt}"
+    task_output = os.path.join(outputs, f'{task}')
+    assert os.path.exists(
+        task_dataset), f"Missing Output folder: {task_output}"
+
+    def score_task(sample_folder, dataset_folder, prompt_json):
+        # get prompt, face, and ref image from dataset folder
+        refs1 = glob.glob(os.path.join(dataset_folder, "*.jpg"))
+        refs2 = glob.glob(os.path.join(dataset_folder, "*.jpeg"))
+        refs = refs1 + refs2
+        refs_images = [read_img_pil(ref) for ref in refs]
+
+        refs_clip = [eval.get_img_embedding(i) for i in refs_images]
+        refs_clip = torch.cat(refs_clip)
+        # print(refs_clip.shape)
+
+        refs_embs = [eval.get_face_embedding(i) for i in refs_images]
+        refs_embs = [emb for emb in refs_embs if emb is not None]
+        refs_embs = torch.cat(refs_embs)
+        # print(refs_embs.shape)
+
+        # print("Ref Count: ", len(refs_images))
+        # print("Emb: ", refs_embs.shape)
+
+        pompt_scores = []
+        prompts = json.load(open(prompt_json, "r"))
+        for prompt_index, prompt in enumerate(prompts):
+            sample_scores = []
+            for idx in range(0, 3):  # 3 generation for each prompt
+                # for face / target reference
+                sample_path = os.path.join(
+                    sample_folder, f"{prompt_index}-{idx:03}.jpg")
+                try:
+                    sample = read_img_pil(sample_path)
+                    # sample vs ref
+                    score_face = eval.sim_face_emb(sample, refs_embs)
+                    score_clip = eval.sim_clip_imgembs(sample, refs_clip)
+                    # sample vs prompt
+                    score_text = eval.sim_clip_text(sample, prompt)
+                    sample_score = [score_face, score_clip, score_text]
+                except Exception as e:
+                    # print(e)
+                    sample_score = [0.0, 0.0, 0.0]
+                # print(f"Score for sample {idx}: ", sample_score)
+                sample_scores.append(sample_score)
+            pompt_score = np.mean(sample_scores, axis=0)
+            # print(f"Score for prompt {prompt_index}: ", pompt_score)
+            pompt_scores.append(pompt_score)
+        task_score = np.mean(pompt_scores, axis=0)
+        return task_score
+
+    # calculate score
+    task_dataset = os.path.join(dataset, f'{task}')
+    task_prompt = os.path.join(prompts, f'{task}.json')
+    task_output = os.path.join(outputs, f'{task}')
+    score = score_task(task_output, task_dataset, task_prompt)
+    print(f"Score for task {task}: ", score)
+
+    return {
+        "face": score[0],
+        "img_clip": score[1],
+        "text_clip": score[2],
+    }
 
 def score(dataset, prompts, outputs):
     eval = Evaluator()
