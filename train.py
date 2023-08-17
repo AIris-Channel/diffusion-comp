@@ -155,7 +155,7 @@ def train(config):
 
         from score import score_one_task
         scores = score_one_task('./train_data/', './eval_prompts/', './outputs/', data_name)
-        with open(os.path.join(config.log_dir, 'score.txt'), 'a') as f:
+        with open(os.path.join(config.workdir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
             for k, v in scores.items():\
                 f.write(f'{k}: {v}\n')
