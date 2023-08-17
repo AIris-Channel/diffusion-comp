@@ -113,22 +113,19 @@ def train(config):
         from sample import set_seed, sample
         import json
         set_seed(42)
-        config2 = get_config()
+        eval_config = get_config()
         for data_name in ['boy1','boy2','girl1','girl2']:
             if data_name in config.workdir:
-                config2.output_path = os.path.join('outputs', data_name)
+                eval_config.output_path = os.path.join('outputs', data_name)
                 prompt_path = f'eval_prompts/{data_name}.json'
-        config2.n_samples = 3
-        config2.n_iter = 1
-        device = "cuda"
-
-        # init models
-        autoencoder = libs.autoencoder.get_model(**config2.autoencoder)
-        clip_text_model = FrozenCLIPEmbedder(version=config2.clip_text_model, device=device)
-
-        clip_text_model.to(device)
+                break
+        eval_config.n_samples = 3
+        eval_config.n_iter = 1
+        
         autoencoder.to(device)
-        nnet.to(device)
+        clip_text_model.to(device)
+        
+        torch.cuda.empty_cache()
         
         # 基于给定的prompt进行生成
         prompts = json.load(open(prompt_path, "r"))
@@ -139,17 +136,23 @@ def train(config):
             else:
                 prompt = prompt.replace("girl", "sks girl")
 
-            config2.prompt = prompt
+            eval_config.prompt = prompt
             print("sampling with prompt:", prompt)
-            sample(prompt_index, config2, nnet, clip_text_model, autoencoder, device)
-        
-        from score import score
-        scores = score('./train_data/', './eval_prompts/', './outputs/')
+            with torch.no_grad():
+                sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
+
+        from score import score_one_task
+        scores = score_one_task('./train_data/', './eval_prompts/', './outputs/', data_name)
         with open(os.path.join(config.log_dir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
             for k, v in scores.items():
                 f.write(f'{k}: {v}\n')
-        return
+        print(f"eval score: {scores}")
+        
+        clip_text_model.to("cpu")
+        autoencoder.to("cpu")
+        
+        return scores
 
     def loop():
         log_step = 0
