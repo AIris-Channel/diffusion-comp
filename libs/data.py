@@ -5,11 +5,12 @@ import numpy as np
 import re
 import os
 import PIL
-from PIL import Image
+from PIL import Image, ImageOps
 from torch.utils.data import Dataset
 import random
 import torch
 import gc
+from autocrop import get_crop_face_func
 
 
 training_templates_smallest = [
@@ -142,7 +143,15 @@ def _convert_image_to_rgb(image):
     return image.convert("RGB")
 
 
-def _transform(n_px):
+def _transform(n_px, crop_face=False):
+    if crop_face:
+        _crop_face = get_crop_face_func(crop_width=n_px, crop_height=n_px)
+        return transforms.Compose([
+            _crop_face,
+            _convert_image_to_rgb,
+            transforms.ToTensor(),
+            transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711)),
+        ])
     return transforms.Compose([
         transforms.Resize(n_px, interpolation=transforms.InterpolationMode.BICUBIC),
         transforms.CenterCrop(n_px),
@@ -164,12 +173,13 @@ class PersonalizedBase(Dataset):
                  per_image_tokens=False,
                  mixing_prob=0.25,
                  coarse_class_text=None,
-                 reg = False
+                 reg = False,
+                 crop_face = False,
                  ):
 
         self.data_root = data_root
 
-        self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if not file_path.endswith(".txt")]
+        self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
 
         self.num_images = len(self.image_paths)
         self._length = self.num_images 
@@ -180,9 +190,13 @@ class PersonalizedBase(Dataset):
         self.mixing_prob = mixing_prob
         
         
-        self.transform_clip = _transform(224)
-        self.transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
-                                             transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+        self.transform_clip = _transform(224, crop_face=crop_face)
+        if crop_face:
+            _crop_face = get_crop_face_func(crop_width=resolution, crop_height=resolution)
+            self.transform = transforms.Compose([_crop_face, transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+        else:
+            self.transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
+                                                transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
 
         self.coarse_class_text = coarse_class_text
 
@@ -197,7 +211,7 @@ class PersonalizedBase(Dataset):
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
         self.datas = []
         for i in range(self.num_images):
-            pil_image = Image.open(self.image_paths[i % self.num_images]).convert("RGB")
+            pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i % self.num_images])).convert("RGB")
 
             placeholder_string = self.placeholder_token
             if self.coarse_class_text:
