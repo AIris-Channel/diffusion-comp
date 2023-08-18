@@ -19,10 +19,10 @@ def get_config():
     config.gradient_accumulation_steps = 1
     config.log_interval = 50
     config.eval_interval = 300
-    config.save_interval = 300
+    config.save_interval = 1e10
     config.max_step = 3000
 
-    config.num_workers = 10
+    config.num_workers = 1
     config.batch_size = 5
     config.resolution = 512
 
@@ -30,6 +30,10 @@ def get_config():
     config.clip_text_model = "openai/clip-vit-large-patch14"
 
     config.only_load_model = True
+
+    config.face_ratio = 3
+    config.clip_img_ratio = 1
+    config.clip_text_ratio = 6
 
     config.optimizer = d(
         name='adamw',

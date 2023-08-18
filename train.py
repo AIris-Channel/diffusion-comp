@@ -41,7 +41,7 @@ def train(config):
     logging.info(f'load nnet from {config.nnet_path}')
     train_state.nnet.load_state_dict(torch.load(
         config.nnet_path, map_location='cpu'), False)
-    train_state.nnet = train_state.nnet.half()
+    # train_state.nnet = train_state.nnet.half()
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
 
     nnet, optimizer = accelerator.prepare(
@@ -52,6 +52,7 @@ def train(config):
     lr_scheduler = train_state.lr_scheduler
 
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
+    # autoencoder = autoencoder.half()
 
     clip_text_model = FrozenCLIPEmbedder(
         version=config.clip_text_model, device=device)
@@ -64,7 +65,7 @@ def train(config):
     """
     # process data
     train_dataset = PersonalizedBase(
-        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl")
+        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True)
     train_dataset.prepare(autoencoder, clip_img_model,
                           clip_text_model, caption_decoder)
     train_dataset_loader = DataLoader(train_dataset,
@@ -163,6 +164,7 @@ def train(config):
         
         clip_text_model.to("cpu")
         autoencoder.to("cpu")
+
         
         return scores
         
@@ -170,6 +172,9 @@ def train(config):
         log_step = 0
         eval_step = 0
         save_step = config.save_interval
+        
+        best_score = float('-inf')
+        
         while True:
             nnet.train()
             with accelerator.accumulate(nnet):
@@ -182,6 +187,17 @@ def train(config):
                     scores = eval(total_step)
                     eval_step += config.eval_interval
                     
+                    current_score = sum([
+                        scores['face'] * config.face_ratio +
+                        scores['img_clip'] * config.clip_img_ratio +
+                        scores['text_clip'] * config.clip_text_ratio
+                    ])
+                    
+                    if current_score > best_score:
+                        logging.info(f'saving best ckpts to {config.outdir}...')
+                        best_score = current_score
+                        train_state.save(os.path.join(
+                            config.outdir, 'best.ckpt'))
                 if total_step >= log_step:
                     logging.info(utils.dct2str(
                         dict(step=total_step, **metrics)))

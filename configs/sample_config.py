@@ -23,13 +23,14 @@ def get_config():
     config.max_step = 1500
         
     config.num_workers = 10
-    config.batch_size = 6
+    config.batch_size = 3
     config.resolution = 512
     
     config.clip_img_model = "ViT-B/32"
     config.clip_text_model = "openai/clip-vit-large-patch14"
     
     config.only_load_model = True
+    
     
 
     config.optimizer = d(
