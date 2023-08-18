@@ -279,7 +279,7 @@ def main(argv=None):
     set_seed(args.seed)
     config = get_config()
     config.output_path = args.output_path
-    config.nnet_path = os.path.join(args.restore_path, "final.ckpt",'nnet.pth')
+    config.nnet_path = os.path.join(args.restore_path, "best.ckpt",'nnet.pth')
     config.n_samples = 3
     config.n_iter = 1
     device = "cuda"
