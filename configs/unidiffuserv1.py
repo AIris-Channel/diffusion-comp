@@ -18,19 +18,18 @@ def get_config():
     config.data_type = 1
     config.gradient_accumulation_steps = 1
     config.log_interval = 50
-    config.eval_interval = 100
+    config.eval_interval = 300
     config.save_interval = 300
-    config.max_step = 400
-        
+    config.max_step = 3000
+
     config.num_workers = 10
-    config.batch_size = 6
+    config.batch_size = 5
     config.resolution = 512
-    
+
     config.clip_img_model = "ViT-B/32"
     config.clip_text_model = "openai/clip-vit-large-patch14"
-    
+
     config.only_load_model = True
-    
 
     config.optimizer = d(
         name='adamw',
@@ -52,7 +51,7 @@ def get_config():
     config.caption_decoder = d(
         pretrained_path="models/caption_decoder.pth",
         hidden_dim=config.get_ref('text_dim'),
-        tokenizer_path = "./models/gpt2"
+        tokenizer_path="./models/gpt2"
     )
 
     config.nnet = d(
@@ -73,7 +72,6 @@ def get_config():
         clip_img_dim=config.get_ref('clip_img_dim'),
         use_checkpoint=True
     )
-
 
     # sample
     config.mode = "t2i"
