@@ -41,7 +41,7 @@ def train(config):
     logging.info(f'load nnet from {config.nnet_path}')
     train_state.nnet.load_state_dict(torch.load(
         config.nnet_path, map_location='cpu'), False)
-
+    train_state.nnet = train_state.nnet.half()
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
 
     nnet, optimizer = accelerator.prepare(
@@ -157,7 +157,7 @@ def train(config):
         scores = score_one_task('./train_data/', './eval_prompts/', './outputs/', data_name)
         with open(os.path.join(config.workdir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
-            for k, v in scores.items():\
+            for k, v in scores.items():
                 f.write(f'{k}: {v}\n')
         print(f"eval score: {scores}")
         
