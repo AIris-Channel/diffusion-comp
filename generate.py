@@ -25,7 +25,7 @@ nnet.to(device)
 
 
 prompts = json.load(open(args.prompt_path, "r"))
-prompts = json.load(open(args.prompt_path, "r"))
+
 for prompt_index, prompt in enumerate(prompts):
     config.prompt = prompt
     print("sampling with prompt:", prompt)

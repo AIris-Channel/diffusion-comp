@@ -9,6 +9,7 @@
 - Dreambooth
 - Custome Diffusion
 - 每个batch中图片不resize的尺寸
+- BLIP自动打标
 
 
 

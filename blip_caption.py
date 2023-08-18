@@ -23,7 +23,7 @@ for sub_dir in sub_dirs:
         raw_image = Image.open(img_path).convert('RGB')
 
         # Conditional image captioning
-        text = "a photo of a " + sub_dir
+        text = "a photo of a " + sub_dir[:-1]
         inputs = processor(raw_image, text, return_tensors="pt").to("cuda", torch.float16)
 
         out = model.generate(**inputs)
