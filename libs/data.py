@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 import random
 import torch
 import gc
-from autocrop import get_crop_face_func
+from libs.autocrop import get_crop_face_func
 
 
 training_templates_smallest = [
@@ -143,7 +143,7 @@ def _convert_image_to_rgb(image):
     return image.convert("RGB")
 
 
-def _transform(n_px, crop_face=False):
+def clip_transform(n_px, crop_face=False):
     if crop_face:
         _crop_face = get_crop_face_func(crop_width=n_px, crop_height=n_px)
         return transforms.Compose([
@@ -160,6 +160,15 @@ def _transform(n_px, crop_face=False):
         transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711)),
     ])
 
+def vae_transform(resolution,crop_face=False):
+    if crop_face:
+            _crop_face = get_crop_face_func(crop_width=resolution, crop_height=resolution)
+            transform = transforms.Compose([_crop_face, transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+    else:
+        transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
+                                            transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+    return transform
+    
 
 
 class PersonalizedBase(Dataset):
@@ -189,14 +198,8 @@ class PersonalizedBase(Dataset):
         self.per_image_tokens = per_image_tokens
         self.mixing_prob = mixing_prob
         
-        
-        self.transform_clip = _transform(224, crop_face=crop_face)
-        if crop_face:
-            _crop_face = get_crop_face_func(crop_width=resolution, crop_height=resolution)
-            self.transform = transforms.Compose([_crop_face, transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
-        else:
-            self.transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
-                                                transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+        self.resolution = resolution
+        self.crop_face = crop_face
 
         self.coarse_class_text = coarse_class_text
 
@@ -208,7 +211,7 @@ class PersonalizedBase(Dataset):
 
         self.reg = reg
         
-    def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
+    def prepare(self,autoencoder,clip_img_model):
         self.datas = []
         for i in range(self.num_images):
             pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i % self.num_images])).convert("RGB")
@@ -223,8 +226,9 @@ class PersonalizedBase(Dataset):
                 text = random.choice(reg_templates_smallest).format(placeholder_string)
 
             # default to score-sde preprocessing
-            img = self.transform(pil_image)
-            img4clip = self.transform_clip(pil_image)
+
+            img = vae_transform(self.resolution,crop_face=self.crop_face)(pil_image)
+            img4clip = clip_transform(224,crop_face=self.crop_face)(pil_image)
             
             img = img.to("cuda").unsqueeze(0)
             img4clip = img4clip.to("cuda").unsqueeze(0)
@@ -233,23 +237,22 @@ class PersonalizedBase(Dataset):
             with torch.no_grad():
                 z = autoencoder.encode(img)
                 clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
-                text = clip_text_model.encode(text)
-                text = caption_decoder.encode_prefix(text)
+                # text = clip_text_model.encode(text)
+                # text = caption_decoder.encode_prefix(text)
             data_type = 0
             z = z.to("cpu")
             clip_img = clip_img.to("cpu")
-            text = text.to("cpu")
+            # text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
-        print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
+        # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
         autoencoder = autoencoder.to("cpu")
         clip_img_model = clip_img_model.to("cpu")
-        clip_text_model = clip_text_model.to("cpu")
-        caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
-        del caption_decoder
+        # clip_text_model = clip_text_model.to("cpu")
+        # caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
+        # del caption_decoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
-        
         
 
     def __len__(self):
@@ -259,7 +262,7 @@ class PersonalizedBase(Dataset):
 
         z = self.datas[ i % self.num_images ][0].squeeze(0)
         clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
-        text = self.datas[ i % self.num_images ][2].squeeze(0)
+        text = self.datas[ i % self.num_images ][2]#.squeeze(0)
         data_type = self.datas[ i % self.num_images ][3]
         
         return z,clip_img,text,data_type

@@ -25,6 +25,7 @@ import datetime
 from pathlib import Path
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
+from utils import get_optimizer, get_lr_scheduler
 
 
 def train(config):
@@ -32,29 +33,36 @@ def train(config):
     prepare models
     准备各类需要的模型
     """
-    wandb.login()
-    wandb.init(project='diffusion-comp', config=config)
+    # wandb.login()
+    # wandb.init(project='diffusion-comp', config=config)
     
     accelerator, device = utils.setup(config)
 
-    train_state = utils.initialize_train_state(config, device, uvit_class=UViT)
+    nnet = UViT(**config.nnet)
+    nnet.requires_grad_(False)
+    nnet.to(device)
     logging.info(f'load nnet from {config.nnet_path}')
-    train_state.nnet.load_state_dict(torch.load(
+    nnet.load_state_dict(torch.load(
         config.nnet_path, map_location='cpu'), False)
 
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
-
-    nnet, optimizer = accelerator.prepare(
-        train_state.nnet, train_state.optimizer)
-    
-    
-    nnet.to(device)
-    lr_scheduler = train_state.lr_scheduler
 
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
 
     clip_text_model = FrozenCLIPEmbedder(
         version=config.clip_text_model, device=device)
+    orig_embeds_params = clip_text_model.transformer.text_model.embeddings.token_embedding.weight.detach().clone()
+    clip_text_model.transformer.text_model.embeddings.token_embedding.requires_grad_(True)
+    token_id = clip_text_model.tokenizer.convert_tokens_to_ids(['sks'])[0]
+    print(f"tokens are added: {token_id}")
+    index_no_updates = torch.arange(len(clip_text_model.tokenizer)) != token_id
+
+    optimizer = get_optimizer(clip_text_model.transformer.text_model.embeddings.token_embedding.parameters(), **config.optimizer)
+
+    clip_text_model, optimizer = accelerator.prepare(clip_text_model, optimizer)
+    
+    lr_scheduler = get_lr_scheduler(optimizer, **config.lr_scheduler)
+
     clip_img_model, clip_img_model_preprocess = clip.load(
         config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
@@ -65,8 +73,7 @@ def train(config):
     # process data
     train_dataset = PersonalizedBase(
         config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl")
-    train_dataset.prepare(autoencoder, clip_img_model,
-                          clip_text_model, caption_decoder)
+    train_dataset.prepare(autoencoder, clip_img_model)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,
@@ -87,12 +94,15 @@ def train(config):
     schedule = Schedule(_betas)
     logging.info(f'use {schedule}')
 
+    step = 0
+
     def train_step():
         metrics = dict()
         z, clip_img, text, data_type = next(train_data_generator)
         z = z.to(device)
         clip_img = clip_img.to(device)
-        text = text.to(device)
+        text = clip_text_model.encode(text).to(device)
+        text = caption_decoder.encode_prefix(text)
         data_type = data_type.to(device)
 
         with torch.cuda.amp.autocast():
@@ -101,9 +111,14 @@ def train(config):
             accelerator.backward(loss.mean())
         optimizer.step()
         lr_scheduler.step()
-        train_state.ema_update(config.get('ema_rate', 0.9999))
-        train_state.step += 1
+        # train_state.ema_update(config.get('ema_rate', 0.9999))
+        nonlocal step
+        step += 1
         optimizer.zero_grad(set_to_none=True)
+        
+        with torch.no_grad():
+            clip_text_model.transformer.text_model.embeddings.token_embedding.weight[index_no_updates] = orig_embeds_params[index_no_updates]
+
         metrics['loss'] = accelerator.gather(
             loss.detach().mean()).mean().item()
         metrics['loss_img'] = accelerator.gather(
@@ -111,7 +126,7 @@ def train(config):
         metrics['loss_clip_img'] = accelerator.gather(
             loss_clip_img.detach().mean()).mean().item()
         # metrics['scale'] = accelerator.scaler.get_scale()
-        metrics['lr'] = train_state.optimizer.param_groups[0]['lr']
+        metrics['lr'] = optimizer.param_groups[0]['lr']
         return metrics
 
     @torch.no_grad()
@@ -157,11 +172,11 @@ def train(config):
         scores = score_one_task('./train_data/', './eval_prompts/', './outputs/', data_name)
         with open(os.path.join(config.log_dir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
-            for k, v in scores.items():\
+            for k, v in scores.items():
                 f.write(f'{k}: {v}\n')
         print(f"eval score: {scores}")
         
-        clip_text_model.to("cpu")
+        # clip_text_model.to("cpu")
         autoencoder.to("cpu")
         
         return scores
@@ -177,7 +192,7 @@ def train(config):
 
             if accelerator.is_main_process:
                 nnet.eval()
-                total_step = train_state.step * config.batch_size
+                total_step = step * config.batch_size
                 if total_step >= eval_step:
                     scores = eval(total_step)
                     eval_step += config.eval_interval
@@ -195,15 +210,19 @@ def train(config):
 
                 if total_step >= save_step:
                     logging.info(f'Save and eval checkpoint {total_step}...')
-                    train_state.save(os.path.join(
-                        config.ckpt_root, f'{total_step:04}.ckpt'))
+                    torch.save(clip_text_model.transformer.state_dict(), os.path.join(
+                        config.ckpt_root, f'{total_step:04}.pth'))
+                    # train_state.save(os.path.join(
+                    #     config.ckpt_root, f'{total_step:04}.ckpt'))
                     save_step += config.save_interval
 
             accelerator.wait_for_everyone()
 
             if total_step >= config.max_step:
                 logging.info(f"saving final ckpts to {config.outdir}...")
-                train_state.save(os.path.join(config.outdir, 'final.ckpt'))
+                torch.save(clip_text_model.transformer.state_dict(), os.path.join(
+                    config.outdir, 'final.pth'))
+                # train_state.save(os.path.join(config.outdir, 'final.ckpt'))
                 break
 
     loop()
