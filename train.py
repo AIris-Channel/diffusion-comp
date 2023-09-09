@@ -127,44 +127,51 @@ def train(config):
         import json
         set_seed(42)
         eval_config = get_config()
-        for data_name in ['boy1','boy2','girl1','girl2']:
-            if data_name in config.workdir:
-                eval_config.output_path = os.path.join('outputs', data_name)
-                prompt_path = f'eval_prompts/{data_name}.json'
-                break
+        
         eval_config.n_samples = 3
         eval_config.n_iter = 1
         
         autoencoder.to(device)
-        clip_text_model.to(device)
+        clip_text_model.to(device)  
         
         torch.cuda.empty_cache()
+         
+        for data_name in ['boy1','boy2','girl1','girl2']:
+            if data_name in config.workdir:
+                    # first sample
+                    for task in ['sim','edit']:
+                        task_name = f'{data_name}_{task}'
+                        eval_config.output_path = os.path.join('outputs', task_name)
+                        prompt_path = f'eval_prompts_advance/{task_name}.json'
+                
+                
+                        # 基于给定的prompt进行生成
+                        prompts = json.load(open(prompt_path, "r"))
+                        for prompt_index, prompt in enumerate(prompts):
+                            # 根据训练策略
+                            if "boy" in prompt:
+                                prompt = prompt.replace("boy", "sks boy")
+                            else:
+                                prompt = prompt.replace("girl", "sks girl")
+
+                            eval_config.prompt = prompt
+                            print("sampling with prompt:", prompt)
+                            with torch.no_grad():
+                                sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
+                    break
         
-        # 基于给定的prompt进行生成
-        prompts = json.load(open(prompt_path, "r"))
-        for prompt_index, prompt in enumerate(prompts):
-            # 根据训练策略
-            if "boy" in prompt:
-                prompt = prompt.replace("boy", "sks boy")
-            else:
-                prompt = prompt.replace("girl", "sks girl")
-
-            eval_config.prompt = prompt
-            print("sampling with prompt:", prompt)
-            with torch.no_grad():
-                sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
-
+        
+        # then score
         from score import score_one_task
-        scores = score_one_task('./train_data/', './eval_prompts/', './outputs/', data_name)
+        scores = score_one_task('./train_data/', './eval_prompts_advance/', './outputs/', data_name)
         with open(os.path.join(config.workdir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
             for k, v in scores.items():
                 f.write(f'{k}: {v}\n')
-        print(f"eval score: {scores}")
         
+    
         clip_text_model.to("cpu")
         autoencoder.to("cpu")
-
         
         return scores
         
@@ -188,16 +195,18 @@ def train(config):
                     eval_step += config.eval_interval
                     
                     current_score = sum([
-                        scores['face'] * config.face_ratio +
-                        scores['img_clip'] * config.clip_img_ratio +
-                        scores['text_clip'] * config.clip_text_ratio
+                        scores['sim_face'] * config.sim_face_ratio +
+                        scores['sim_clip'] * config.sim_clip_ratio +
+                        scores['edit_face'] * config.edit_face_ratio +
+                        scores['edit_clip'] * config.edit_clip_ratio +
+                        scores['edit_text_clip'] * config.edit_text_clip_ratio
                     ])
                     
                     if current_score > best_score:
                         logging.info(f'saving best ckpts to {config.outdir}...')
                         best_score = current_score
                         train_state.save(os.path.join(
-                            config.outdir, 'best.ckpt'))
+                            config.outdir, 'final.ckpt'))
                 if total_step >= log_step:
                     logging.info(utils.dct2str(
                         dict(step=total_step, **metrics)))
@@ -218,8 +227,8 @@ def train(config):
             accelerator.wait_for_everyone()
 
             if total_step >= config.max_step:
-                logging.info(f"saving final ckpts to {config.outdir}...")
-                train_state.save(os.path.join(config.outdir, 'final.ckpt'))
+                # logging.info(f"saving final ckpts to {config.outdir}...")
+                # train_state.save(os.path.join(config.outdir, 'final.ckpt')) # only save best model
                 break
 
     loop()
