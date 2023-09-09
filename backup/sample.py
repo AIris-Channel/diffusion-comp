@@ -177,7 +177,10 @@ def sample(prompt_index, config, nnet, clip_text_model, autoencoder, device):
 
         dpm_solver = DPM_Solver(model_fn, noise_schedule, predict_x0=True, thresholding=False)
         with torch.no_grad(), torch.autocast(device_type="cuda" if "cuda" in str(device) else "cpu"):
+            start_time = time.time()
             x = dpm_solver.sample(_x_init, steps=config.sample.sample_steps, eps=1. / N, T=1.)
+            end_time = time.time()
+            print(f'\ngenerate {_n_samples} samples with {config.sample.sample_steps} steps takes {end_time - start_time:.2f}s')
 
         _z, _clip_img = split(x)
         return _z, _clip_img
@@ -197,7 +200,9 @@ def sample(prompt_index, config, nnet, clip_text_model, autoencoder, device):
         save_path = os.path.join(config.output_path, f'{prompt_index}-{idx:03}.jpg')
         save_image(sample, save_path)
         
-    print(f'results are saved in {save_path}')
+
+    print(f'\nGPU memory usage: {torch.cuda.max_memory_reserved() / 1024 ** 3:.2f} GB')
+    print(f'\nresults are saved in {os.path.join(config.output_path)} :)')
 
 
 def compare_model(standard_model:torch.nn.Module, model:torch.nn.Module, mapping_dict= {}):
@@ -228,6 +233,7 @@ def compare_model(standard_model:torch.nn.Module, model:torch.nn.Module, mapping
         elif (origin_p - compare_p).norm() != 0:
             diff_paramters += origin_p.numel()
     
+    print(f"common diff: {diff_paramters}")
     
     mapping_keys = set(mapping_dict.keys())
     assert set.issubset(mapping_keys, origin_only_keys)
@@ -250,6 +256,8 @@ def compare_model(standard_model:torch.nn.Module, model:torch.nn.Module, mapping
     for k in extra_origin_keys:
         diff_paramters += origin_dict[k]    
     
+    print("diff parameters:", diff_paramters)
+    
     return diff_paramters
 
 def get_args():
@@ -257,17 +265,21 @@ def get_args():
     parser.add_argument("--restore_path", type=str, default="models/uvit_v1.pth", help="nnet path to resume")
     parser.add_argument("--prompt_path", type=str, default="eval_prompts/boy1.json", help="file contains prompts")
     parser.add_argument("--output_path", type=str, default="outputs/boy1", help="output dir for generated images")
+    parser.add_argument("--seed", type=int, default=42, help="random seed")  # 添加seed参数
     return parser.parse_args()
 
 
 def main(argv=None):
     # config args
     from configs.sample_config import get_config
-    set_seed(42)
+    if argv is None:
+        args = get_args()
+    else:
+        args = argv
+    set_seed(args.seed)
     config = get_config()
-    args = get_args()
     config.output_path = args.output_path
-    config.nnet_path = os.path.join(args.restore_path, "final.ckpt",'nnet.pth')
+    config.nnet_path = os.path.join(args.restore_path, "best.ckpt",'nnet.pth')
     config.n_samples = 3
     config.n_iter = 1
     device = "cuda"
@@ -285,17 +297,19 @@ def main(argv=None):
     autoencoder_mapping_dict = {}
     clip_text_mapping_dict = {}
     
+    print("####### evaluating changed paramters")
     total_diff_parameters = 0
-    
+    print(">>> evaluating nnet changed paramters")
     nnet_standard = UViT(**config.nnet)
     nnet_standard.load_state_dict(torch.load("models/uvit_v1.pth", map_location='cpu'), False)
     total_diff_parameters += compare_model(nnet_standard, nnet, nnet_mapping_dict)
     del nnet_standard
-    
+    print(">>> evaluating autoencoder changed paramters")
     autoencoder_standard = libs.autoencoder.get_model(**config.autoencoder)
     total_diff_parameters += compare_model(autoencoder_standard, autoencoder, autoencoder_mapping_dict)
     del autoencoder_standard
     
+    print(">>> evaluating clip text changed paramters")
     clip_text_strandard = FrozenCLIPEmbedder(version=config.clip_text_model, device=device).to("cpu")
     total_diff_parameters += compare_model(clip_text_strandard, clip_text_model, clip_text_mapping_dict)
     del clip_text_strandard
@@ -318,7 +332,7 @@ def main(argv=None):
         print("sampling with prompt:", prompt)
         sample(prompt_index, config, nnet, clip_text_model, autoencoder, device)
         
-    print(f"\033[91m finetuned parameters: {total_diff_parameters}\033[00m")
+    print("total changed paramters:", total_diff_parameters)
 
 if __name__ == "__main__":
     main()

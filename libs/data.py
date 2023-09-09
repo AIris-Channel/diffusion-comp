@@ -184,6 +184,7 @@ class PersonalizedBase(Dataset):
                  coarse_class_text=None,
                  reg = False,
                  crop_face = False,
+                 use_blip_caption = False
                  ):
 
         self.data_root = data_root
@@ -200,6 +201,7 @@ class PersonalizedBase(Dataset):
         
         self.resolution = resolution
         self.crop_face = crop_face
+        self.use_blip_caption = use_blip_caption
 
         self.coarse_class_text = coarse_class_text
 
@@ -215,8 +217,7 @@ class PersonalizedBase(Dataset):
         self.datas = []
         for i in range(self.num_images):
             pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i])).convert("RGB")
-            caption_text = open(re.sub(r'\.(jpe?g|png)$', '.txt', self.image_paths[i])).read().strip()
-            caption_text = caption_text.replace("boy","sks boy")
+            
             
             placeholder_string = self.placeholder_token
             if self.coarse_class_text:
@@ -228,8 +229,10 @@ class PersonalizedBase(Dataset):
                 text = random.choice(reg_templates_smallest).format(placeholder_string)
 
             # default to score-sde preprocessing
-
-            text = caption_text
+            if self.use_blip_caption:
+                caption_text = open(re.sub(r'\.(jpe?g|png)$', '.txt', self.image_paths[i])).read().strip()
+                caption_text = caption_text.replace("boy","sks boy")
+                text = caption_text
             img = vae_transform(self.resolution,crop_face=self.crop_face)(pil_image)
             img4clip = clip_transform(224,crop_face=self.crop_face)(pil_image)
             

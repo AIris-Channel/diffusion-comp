@@ -31,9 +31,11 @@ def get_config():
 
     config.only_load_model = True
 
-    config.face_ratio = 3
-    config.clip_img_ratio = 1
-    config.clip_text_ratio = 6
+    config.sim_face_ratio = 3
+    config.sim_clip_ratio = 1
+    config.edit_face_ratio = 3
+    config.edit_clip_ratio = 1
+    config.edit_text_clip_ratio = 6
 
     config.optimizer = d(
         name='adamw',
