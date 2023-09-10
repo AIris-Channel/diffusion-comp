@@ -28,6 +28,7 @@ from libs.clip import FrozenCLIPEmbedder
 import numpy as np
 import json
 from libs.uvit_multi_post_ln_v1 import UViT
+from libs.lora import create_network_from_weights
 
 
 def get_model_size(model):
@@ -267,7 +268,10 @@ def main(argv=None):
     config = get_config()
     args = get_args()
     config.output_path = args.output_path
-    config.nnet_path = os.path.join(args.restore_path, "final.ckpt",'nnet.pth')
+    # As we implemented the lora method, the nnet is not trained,so directly load the backbone model
+    # config.nnet_path = os.path.join(args.restore_path, "final.ckpt",'nnet.pth')
+    config.nnet_path = "models/uvit_v1.pth"
+    config.lorann_path = os.path.join(args.restore_path, "final.ckpt",'lorann.pth')
     config.n_samples = 3
     config.n_iter = 1
     device = "cuda"
@@ -287,6 +291,8 @@ def main(argv=None):
     
     total_diff_parameters = 0
     
+    
+    
     nnet_standard = UViT(**config.nnet)
     nnet_standard.load_state_dict(torch.load("models/uvit_v1.pth", map_location='cpu'), False)
     total_diff_parameters += compare_model(nnet_standard, nnet, nnet_mapping_dict)
@@ -304,6 +310,17 @@ def main(argv=None):
     clip_text_model.to(device)
     autoencoder.to(device)
     nnet.to(device)
+    
+    # construct lora model
+    network,weights = create_network_from_weights(1.5,config.lorann_path,autoencoder,clip_text_model,nnet,for_inference=True)
+    network.apply_to(clip_text_model,nnet)
+    info = network.load_state_dict(weights,False)
+    print(f"LoRA weights are loaded: {info}")
+    network.to(device)
+    
+    # 添加lora的微调参数量
+    total_diff_parameters += get_model_size(network)
+    
     
     # 基于给定的prompt进行生成
     prompts = json.load(open(args.prompt_path, "r"))

@@ -46,6 +46,9 @@ def get_optimizer(params, name, **kwargs):
     elif name == 'adamw':
         from torch.optim import AdamW
         return AdamW(params, **kwargs)
+    elif name == 'lion':
+        from lion_pytorch import Lion
+        return Lion(params,**kwargs)
     else:
         raise NotImplementedError(name)
 
@@ -88,17 +91,23 @@ class TrainState(object):
         self.nnet = nnet
         self.nnet_ema = nnet_ema
         self.lorann = lorann
+        self.lorann_ema = None
         self.t2i_adapter = t2i_adapter
+        self.save_target_key = None
 
     def ema_update(self, rate=0.9999):
         if self.nnet_ema is not None:
             ema(self.nnet_ema, self.nnet, rate)
+    
+    def set_save_target_key(self, key):
+        self.save_target_key = key
 
     def save(self, path):
         os.makedirs(path, exist_ok=True)
-        torch.save(self.step, os.path.join(path, 'step.pth'))
         for key, val in self.__dict__.items():
             if key != 'step' and val is not None:
+                if self.save_target_key is not None and key != self.save_target_key:
+                    continue
                 torch.save(val.state_dict(), os.path.join(path, f'{key}.pth'))
 
     def resume(self, ckpt_path=None, only_load_model=False):

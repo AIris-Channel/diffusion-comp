@@ -25,6 +25,7 @@ import datetime
 from pathlib import Path
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
+from libs.lora import create_network
 
 
 def train(config):
@@ -32,13 +33,14 @@ def train(config):
     prepare models
     准备各类需要的模型
     """
-    wandb.login()
-    wandb.init(project='diffusion-comp', config=config)
+    # wandb.login()
+    # wandb.init(project='diffusion-comp', config=config)
     
     accelerator, device = utils.setup(config)
 
     train_state = utils.initialize_train_state(config, device, uvit_class=UViT)
     logging.info(f'load nnet from {config.nnet_path}')
+    train_state.set_save_target_key(config.save_target_key)
     train_state.nnet.load_state_dict(torch.load(
         config.nnet_path, map_location='cpu'), False)
     # train_state.nnet = train_state.nnet.half()
@@ -68,6 +70,9 @@ def train(config):
         config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True)
     train_dataset.prepare(autoencoder, clip_img_model,
                           clip_text_model, caption_decoder)
+
+    if config.train_text_encoder:
+        clip_text_model.to(device)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,
@@ -87,8 +92,42 @@ def train(config):
     _betas = stable_diffusion_beta_schedule()
     schedule = Schedule(_betas)
     logging.info(f'use {schedule}')
+    
+    # prepare lorann
+    lorann = create_network(1.0, config.lora_dim, config.lora_alpha, autoencoder, clip_text_model, nnet, neuron_dropout=config.lora_dropout)
+    lorann.to(device)
+    lorann.apply_to(clip_text_model,nnet,config.train_text_encoder,config.train_nnet)
+    trainable_params = lorann.prepare_optimizer_params(
+        config.text_encoder_lr,config.nnet_lr,config.optimizer.lr
+    )
+    print(f"Training params: {utils.cnt_params(lorann)}")
+    optimizer = utils.get_optimizer(trainable_params, **config.optimizer)
+    
+    if config.train_text_encoder and config.train_nnet:
+        nnet, clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
+            nnet, clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler
+        )
+    elif config.train_nnet:
+        nnet, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
+            nnet, lorann, optimizer, train_dataset_loader, lr_scheduler
+        )
+    elif config.train_text_encoder:
+        clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
+            clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler
+        )
+    else:
+        lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(lorann, optimizer, train_dataset_loader, lr_scheduler)
+        
+    
+    nnet.requires_grad_(False)
+    clip_text_model.requires_grad_(False)
+    nnet.eval()
+    clip_text_model.eval()
+    lorann.prepare_grad_etc(clip_text_model,nnet)
+    train_state.lorann = lorann
+    
 
-    def train_step():
+    def train_step():   
         metrics = dict()
         z, clip_img, text, data_type = next(train_data_generator)
         z = z.to(device)
@@ -170,7 +209,7 @@ def train(config):
                 f.write(f'{k}: {v}\n')
         
     
-        clip_text_model.to("cpu")
+        # clip_text_model.to("cpu")
         autoencoder.to("cpu")
         
         return scores
@@ -179,18 +218,18 @@ def train(config):
         log_step = 0
         eval_step = 0
         save_step = config.save_interval
-        
+
         best_score = float('-inf')
         
         while True:
-            nnet.train()
-            with accelerator.accumulate(nnet):
+            lorann.train()
+            with accelerator.accumulate(lorann):
                 metrics = train_step()
 
             if accelerator.is_main_process:
-                nnet.eval()
+                lorann.eval()
                 total_step = train_state.step * config.batch_size
-                if total_step >= eval_step:
+                if total_step >= eval_step and config.save_best:
                     scores = eval(total_step)
                     eval_step += config.eval_interval
                     
@@ -212,8 +251,9 @@ def train(config):
                         dict(step=total_step, **metrics)))
                     wandb.log(utils.add_prefix(
                         metrics, 'train'), step=total_step)
-                    wandb.log(utils.add_prefix(
-                        scores, 'eval'), step=total_step)
+                    if config.save_best:
+                        wandb.log(utils.add_prefix(
+                            scores, 'eval'), step=total_step)
                     log_step += config.log_interval
 
       
@@ -226,9 +266,9 @@ def train(config):
 
             accelerator.wait_for_everyone()
 
-            if total_step >= config.max_step:
-                # logging.info(f"saving final ckpts to {config.outdir}...")
-                # train_state.save(os.path.join(config.outdir, 'final.ckpt')) # only save best model
+            if total_step >= config.max_step and not config.save_best:
+                logging.info(f"saving final ckpts to {config.outdir}...")
+                train_state.save(os.path.join(config.outdir, 'final.ckpt')) 
                 break
 
     loop()

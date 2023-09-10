@@ -19,11 +19,11 @@ def get_config():
     config.gradient_accumulation_steps = 1
     config.log_interval = 50
     config.eval_interval = 300
-    config.save_interval = 1e10
+    config.save_interval = 1e100
     config.max_step = 3000
 
     config.num_workers = 1
-    config.batch_size = 5
+    config.batch_size = 1
     config.resolution = 512
 
     config.clip_img_model = "ViT-B/32"
@@ -36,14 +36,21 @@ def get_config():
     config.edit_face_ratio = 3
     config.edit_clip_ratio = 1
     config.edit_text_clip_ratio = 6
+    
+    config.save_best = False
+    config.save_target_key = 'lorann'
 
     config.optimizer = d(
         name='adamw',
-        lr=2e-5,
+        lr=1e-5,
         weight_decay=0.03,
         betas=(0.9, 0.9),
         amsgrad=False
     )
+    # config.optimizer = d(
+    #     name = 'lion',
+    #     lr = 2e-5,
+    # )
 
     config.lr_scheduler = d(
         name='customized',
@@ -76,7 +83,7 @@ def get_config():
         text_dim=config.get_ref('text_dim'),
         num_text_tokens=77,
         clip_img_dim=config.get_ref('clip_img_dim'),
-        use_checkpoint=True
+        use_checkpoint=False
     )
 
     # sample
@@ -89,5 +96,14 @@ def get_config():
         scale=7.,
         t2i_cfg_mode='true_uncond'
     )
+    
+    # lora
+    config.lora_dim = 32
+    config.lora_alpha = 32
+    config.lora_dropout = 0.05
+    config.train_text_encoder = False
+    config.text_encoder_lr = 1e-5
+    config.train_nnet = True
+    config.nnet_lr = 1e-5
 
     return config
