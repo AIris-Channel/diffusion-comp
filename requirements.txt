@@ -18,3 +18,4 @@ regex==2023.6.3
 tqdm==4.65.0
 # git+https://github.com/openai/CLIP.git
 ./CLIP
+opencv-python==4.7.0.72
