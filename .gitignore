@@ -18,3 +18,5 @@ train_data.zip
 wandb
 local_scripts
 configs/unidiffuserv1.py
+AIris_submit.tar.gz
+project.zip
