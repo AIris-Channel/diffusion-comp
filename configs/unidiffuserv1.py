@@ -17,9 +17,10 @@ def get_config():
     config.text_dim = 64  # reduce dimension
     config.data_type = 1
     config.gradient_accumulation_steps = 1
-    config.log_interval = 50
-    config.eval_interval = 300
+    config.log_interval = 10
+    config.eval_interval = 50
     config.save_interval = 1e100
+    config.save_best = True
     config.max_step = 3000
 
     config.num_workers = 1
@@ -31,26 +32,34 @@ def get_config():
 
     config.only_load_model = True
 
-    config.sim_face_ratio = 3
-    config.sim_clip_ratio = 1
-    config.edit_face_ratio = 3
-    config.edit_clip_ratio = 1
-    config.edit_text_clip_ratio = 6
+    config.use_blip_caption = True
+    config.sim_face_ratio = 2.0
+    config.sim_clip_ratio = 2.0
+    config.edit_face_ratio = 1.0
+    config.edit_clip_ratio = 1.0
+    config.edit_text_clip_ratio = 4.0
     
-    config.save_best = False
+    # average the ratio
+    ratio_sum = config.sim_face_ratio + config.sim_clip_ratio + config.edit_face_ratio + config.edit_clip_ratio + config.edit_text_clip_ratio
+    config.sim_face_ratio /= ratio_sum
+    config.sim_clip_ratio /= ratio_sum
+    config.edit_face_ratio /= ratio_sum
+    config.edit_clip_ratio /= ratio_sum
+    config.edit_text_clip_ratio /= ratio_sum
+    
     config.save_target_key = 'lorann'
 
-    config.optimizer = d(
-        name='adamw',
-        lr=1e-5,
-        weight_decay=0.03,
-        betas=(0.9, 0.9),
-        amsgrad=False
-    )
     # config.optimizer = d(
-    #     name = 'lion',
-    #     lr = 2e-5,
+    #     name='adamw',
+    #     lr=1e-5,
+    #     weight_decay=0.03,
+    #     betas=(0.9, 0.9),
+    #     amsgrad=False
     # )
+    config.optimizer = d(
+        name = 'lion',
+        lr = 2e-5,
+    )
 
     config.lr_scheduler = d(
         name='customized',
@@ -98,12 +107,23 @@ def get_config():
     )
     
     # lora
-    config.lora_dim = 32
-    config.lora_alpha = 32
-    config.lora_dropout = 0.05
+    config.lora_dim = 4
+    config.lora_alpha = 8
+    config.lora_dropout = 0
     config.train_text_encoder = False
-    config.text_encoder_lr = 1e-5
+    config.text_encoder_lr = 2e-5
     config.train_nnet = True
-    config.nnet_lr = 1e-5
-
+    config.nnet_lr = 2e-5
+    
+    # text inversion
+    config.token_string = 'mychar'
+    config.init_word = 'highly detailed'
+    config.num_vectors_per_token = 10
+    
+    
+    # adversarial training
+    config.use_discriminator = False
+    config.disc_steps = 30
+    config.disc_loss_weight = 1e-2
+    
     return config
