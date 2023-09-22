@@ -26,6 +26,8 @@ from pathlib import Path
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
 from libs.lora import create_network
+from libs.discriminator import Discriminator
+# from score_utils import Evaluator
 
 
 def train(config):
@@ -67,7 +69,7 @@ def train(config):
     """
     # process data
     train_dataset = PersonalizedBase(
-        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True)
+        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True,use_blip_caption=config.use_blip_caption)
     train_dataset.prepare(autoencoder, clip_img_model,
                           clip_text_model, caption_decoder)
 
@@ -126,6 +128,10 @@ def train(config):
     lorann.prepare_grad_etc(clip_text_model,nnet)
     train_state.lorann = lorann
     
+    if config.use_discriminator:
+        discriminator = Discriminator(config.data)
+        disc_loss = 0
+    
 
     def train_step():   
         metrics = dict()
@@ -134,10 +140,19 @@ def train(config):
         clip_img = clip_img.to(device)
         text = text.to(device)
         data_type = data_type.to(device)
+        
+        if config.use_discriminator:
+            global disc_loss
+            if train_state.step % config.disc_steps == 0:
+                disc_loss = discriminator.cal_disc(train_dataset.disc_prompt, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
+
 
         with torch.cuda.amp.autocast():
             loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
                 img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
+            loss = loss.mean()
+            if config.use_discriminator:
+                loss += disc_loss
             accelerator.backward(loss.mean())
         optimizer.step()
         lr_scheduler.step()
@@ -150,6 +165,8 @@ def train(config):
             loss_img.detach().mean()).mean().item()
         metrics['loss_clip_img'] = accelerator.gather(
             loss_clip_img.detach().mean()).mean().item()
+        if config.use_discriminator:
+            metrics['disc_loss'] = disc_loss
         # metrics['scale'] = accelerator.scaler.get_scale()
         metrics['lr'] = train_state.optimizer.param_groups[0]['lr']
         return metrics
@@ -178,7 +195,9 @@ def train(config):
         for data_name in ['boy1','boy2','girl1','girl2']:
             if data_name in config.workdir:
                     # first sample
-                    for task in ['sim','edit']:
+                    TASK = ['sim']
+                    # TASK = ['sim','edit']
+                    for task in TASK:
                         task_name = f'{data_name}_{task}'
                         eval_config.output_path = os.path.join('outputs', task_name)
                         prompt_path = f'eval_prompts_advance/{task_name}.json'
@@ -266,9 +285,10 @@ def train(config):
 
             accelerator.wait_for_everyone()
 
-            if total_step >= config.max_step and not config.save_best:
-                logging.info(f"saving final ckpts to {config.outdir}...")
-                train_state.save(os.path.join(config.outdir, 'final.ckpt')) 
+            if total_step >= config.max_step:
+                if not config.save_best:
+                    logging.info(f"saving final ckpts to {config.outdir}...")
+                    train_state.save(os.path.join(config.outdir, 'final.ckpt')) 
                 break
 
     loop()
