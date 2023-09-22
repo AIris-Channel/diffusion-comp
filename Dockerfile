@@ -24,6 +24,7 @@ COPY ./utils.py ./utils.py
 COPY ./sample.py ./sample.py
 COPY ./sample.sh ./sample.sh
 COPY ./score.py ./score.py
+COPY ./Dockerfile ./Dockerfile
 
 
 ## move pretrained weights
