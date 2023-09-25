@@ -5,10 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: train lora",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["-d", "train_data/boy1", "-o", "model_output/boy1"]
+        },
+        {
+            "name": "Python: train text_inversion",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/train_ti.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["-d", "train_data/boy1", "-o", "model_output/boy1"]

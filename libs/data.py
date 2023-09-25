@@ -184,7 +184,8 @@ class PersonalizedBase(Dataset):
                  coarse_class_text=None,
                  reg = False,
                  crop_face = False,
-                 use_blip_caption = False
+                 use_blip_caption = False,
+                 ti_token_string = None,
                  ):
 
         self.data_root = data_root
@@ -212,6 +213,9 @@ class PersonalizedBase(Dataset):
             self._length = self.num_images * repeats
 
         self.reg = reg
+        self.ti_token_string = ti_token_string
+        
+        self.disc_prompt = f"a photo of a sks {self.placeholder_token}"
         
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
         self.datas = []
@@ -233,6 +237,9 @@ class PersonalizedBase(Dataset):
                 caption_text = open(re.sub(r'\.(jpe?g|png)$', '.txt', self.image_paths[i])).read().strip()
                 caption_text = caption_text.replace("boy","sks boy")
                 text = caption_text
+            
+            if self.ti_token_string is not None:
+                text = text +',' + self.ti_token_string
             img = vae_transform(self.resolution,crop_face=self.crop_face)(pil_image)
             img4clip = clip_transform(224,crop_face=self.crop_face)(pil_image)
             
@@ -240,22 +247,27 @@ class PersonalizedBase(Dataset):
             img4clip = img4clip.to("cuda").unsqueeze(0)
             
             
-            with torch.no_grad():
-                z = autoencoder.encode(img)
-                clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
+  
+            z = autoencoder.encode(img)
+            clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
+            if self.ti_token_string is None:
                 text = clip_text_model.encode(text)
                 text = caption_decoder.encode_prefix(text)
+            
             data_type = 0
             z = z.to("cpu")
             clip_img = clip_img.to("cpu")
-            text = text.to("cpu")
+            if self.ti_token_string is None:
+                text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
         # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
-        autoencoder = autoencoder.to("cpu")
-        clip_img_model = clip_img_model.to("cpu")
-        clip_text_model = clip_text_model.to("cpu")
-        caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
-        del caption_decoder
+        
+        # if self.ti_token_string is None: # don't use text inversion method
+        #     clip_img_model = clip_img_model.to("cpu")
+        #     autoencoder = autoencoder.to("cpu")
+        #     clip_text_model = clip_text_model.to("cpu")
+        #     caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
+        #     del caption_decoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
@@ -272,7 +284,10 @@ class PersonalizedBase(Dataset):
 
         z = self.datas[ i % self.num_images ][0].squeeze(0)
         clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
-        text = self.datas[ i % self.num_images ][2].squeeze(0)
+        if self.ti_token_string is None:
+            text = self.datas[ i % self.num_images ][2].squeeze(0)
+        else:
+            text = self.datas[ i % self.num_images ][2]
         data_type = self.datas[ i % self.num_images ][3]
         
         return z,clip_img,text,data_type
