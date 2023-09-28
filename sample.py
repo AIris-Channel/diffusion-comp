@@ -312,7 +312,7 @@ def main(argv=None):
     nnet.to(device)
     
     # construct lora model
-    network,weights = create_network_from_weights(1.5,config.lorann_path,autoencoder,clip_text_model,nnet,for_inference=True)
+    network,weights = create_network_from_weights(1.0,config.lorann_path,autoencoder,clip_text_model,nnet,for_inference=True)
     network.apply_to(clip_text_model,nnet)
     info = network.load_state_dict(weights,False)
     print(f"LoRA weights are loaded: {info}")
