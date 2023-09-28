@@ -30,6 +30,8 @@ def get_config():
     config.clip_text_model = "openai/clip-vit-large-patch14"
     
     config.only_load_model = True
+
+    config.prompt_added = ", highly detailed, masterpiece"
     
     
 

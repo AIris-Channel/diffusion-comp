@@ -78,6 +78,9 @@ def sample(prompt_index, config, nnet, clip_text_model, autoencoder, device):
     """
     using_prompt: if use prompt as file name
     """
+    if config.prompt_added:
+        config.prompt += config.prompt_added
+
     n_iter = config.n_iter
     if config.get('benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -258,6 +261,7 @@ def get_args():
     parser.add_argument("--restore_path", type=str, default="models/uvit_v1.pth", help="nnet path to resume")
     parser.add_argument("--prompt_path", type=str, default="eval_prompts/boy1.json", help="file contains prompts")
     parser.add_argument("--output_path", type=str, default="outputs/boy1", help="output dir for generated images")
+    parser.add_argument("--add_prompt", type=str, default="", help="prompt added")
     return parser.parse_args()
 
 
@@ -268,6 +272,8 @@ def main(argv=None):
     config = get_config()
     args = get_args()
     config.output_path = args.output_path
+    if args.add_prompt:
+        config.prompt_added = args.add_prompt
     # As we implemented the lora method, the nnet is not trained,so directly load the backbone model
     # config.nnet_path = os.path.join(args.restore_path, "final.ckpt",'nnet.pth')
     config.nnet_path = "models/uvit_v1.pth"
