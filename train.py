@@ -195,8 +195,7 @@ def train(config):
         for data_name in ['boy1','boy2','girl1','girl2']:
             if data_name in config.workdir:
                     # first sample
-                    TASK = ['sim']
-                    # TASK = ['sim','edit']
+                    TASK = ['sim','edit']
                     for task in TASK:
                         task_name = f'{data_name}_{task}'
                         eval_config.output_path = os.path.join('outputs', task_name)

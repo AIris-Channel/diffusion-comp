@@ -18,10 +18,10 @@ def get_config():
     config.data_type = 1
     config.gradient_accumulation_steps = 1
     config.log_interval = 10
-    config.eval_interval = 50
+    config.eval_interval = 500
     config.save_interval = 1e100
     config.save_best = True
-    config.max_step = 3000
+    config.max_step = 5000
 
     config.num_workers = 1
     config.batch_size = 1
@@ -32,12 +32,12 @@ def get_config():
 
     config.only_load_model = True
 
-    config.use_blip_caption = True
-    config.sim_face_ratio = 2.0
-    config.sim_clip_ratio = 2.0
-    config.edit_face_ratio = 1.0
-    config.edit_clip_ratio = 1.0
-    config.edit_text_clip_ratio = 4.0
+    config.use_blip_caption = False
+    config.sim_face_ratio = 7.0
+    config.sim_clip_ratio = 3.0
+    config.edit_face_ratio = 7.0
+    config.edit_clip_ratio = 3.0
+    config.edit_text_clip_ratio = 6.0
     
     # average the ratio
     ratio_sum = config.sim_face_ratio + config.sim_clip_ratio + config.edit_face_ratio + config.edit_clip_ratio + config.edit_text_clip_ratio
@@ -107,9 +107,9 @@ def get_config():
     )
     
     # lora
-    config.lora_dim = 4
-    config.lora_alpha = 8
-    config.lora_dropout = 0
+    config.lora_dim = 8
+    config.lora_alpha = 4
+    config.lora_dropout = 0.05
     config.train_text_encoder = False
     config.text_encoder_lr = 2e-5
     config.train_nnet = True
