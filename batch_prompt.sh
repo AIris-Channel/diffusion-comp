@@ -11,5 +11,5 @@ for prompt in "${prompt_list[@]}"; do
     python sample.py --restore_path model_output/boy2 --prompt_path eval_prompts_advance/boy2_edit.json --output_path outputs/boy2_edit --add_prompt "$prompt"
     python sample.py --restore_path model_output/girl1 --prompt_path eval_prompts_advance/girl1_edit.json --output_path outputs/girl1_edit --add_prompt "$prompt"
     python sample.py --restore_path model_output/girl2 --prompt_path eval_prompts_advance/girl2_edit.json --output_path outputs/girl2_edit --add_prompt "$prompt"
-    python score.py --task_name "$prompt"
+    python write_score.py --task_name "$prompt"
 done
