@@ -31,7 +31,11 @@ def get_config():
     
     config.only_load_model = True
 
+<<<<<<< HEAD
     config.prompt_added = ", highly detailed, masterpiece, realistic style, depth of field, black hair, black eyes, beautiful eyes"
+=======
+    config.prompt_added = ['highly detailed', 'masterpiece']
+>>>>>>> 9549421dfaf959fefb2c6df3a193db01ae746a6a
     
     
 

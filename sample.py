@@ -79,7 +79,7 @@ def sample(prompt_index, config, nnet, clip_text_model, autoencoder, device):
     using_prompt: if use prompt as file name
     """
     if config.prompt_added:
-        config.prompt += config.prompt_added
+        config.prompt = ', '.join([config.prompt]+config.prompt_added)
 
     n_iter = config.n_iter
     if config.get('benchmark', False):
@@ -261,7 +261,8 @@ def get_args():
     parser.add_argument("--restore_path", type=str, default="models/uvit_v1.pth", help="nnet path to resume")
     parser.add_argument("--prompt_path", type=str, default="eval_prompts/boy1.json", help="file contains prompts")
     parser.add_argument("--output_path", type=str, default="outputs/boy1", help="output dir for generated images")
-    parser.add_argument("--add_prompt", type=str, default="", help="prompt added")
+    parser.add_argument("--add_prompt", nargs='*', help="prompt added")
+    parser.add_argument("--lora_multiplier", type=float, default=1, help="lora multiplier")
     return parser.parse_args()
 
 
@@ -318,7 +319,7 @@ def main(argv=None):
     nnet.to(device)
     
     # construct lora model
-    network,weights = create_network_from_weights(1.0,config.lorann_path,autoencoder,clip_text_model,nnet,for_inference=True)
+    network,weights = create_network_from_weights(args.lora_multiplier,config.lorann_path,autoencoder,clip_text_model,nnet,for_inference=True)
     network.apply_to(clip_text_model,nnet)
     info = network.load_state_dict(weights,False)
     print(f"LoRA weights are loaded: {info}")
