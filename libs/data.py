@@ -186,6 +186,7 @@ class PersonalizedBase(Dataset):
                  crop_face = False,
                  use_blip_caption = False,
                  ti_token_string = None,
+                 train_text_encoder = False
                  ):
 
         self.data_root = data_root
@@ -214,6 +215,7 @@ class PersonalizedBase(Dataset):
 
         self.reg = reg
         self.ti_token_string = ti_token_string
+        self.train_text_encoder = train_text_encoder
         
         self.disc_prompt = f"a photo of a sks {self.placeholder_token}"
         
@@ -250,19 +252,19 @@ class PersonalizedBase(Dataset):
   
             z = autoencoder.encode(img)
             clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
-            if self.ti_token_string is None:
+            if self.train_text_encoder is False:
                 text = clip_text_model.encode(text)
                 text = caption_decoder.encode_prefix(text)
             
             data_type = 0
             z = z.to("cpu")
             clip_img = clip_img.to("cpu")
-            if self.ti_token_string is None:
+            if self.train_text_encoder is False:
                 text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
         # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
         
-        # if self.ti_token_string is None: # don't use text inversion method
+        # if self.train_text_encoder is False: # don't use text inversion method
         #     clip_img_model = clip_img_model.to("cpu")
         #     autoencoder = autoencoder.to("cpu")
         #     clip_text_model = clip_text_model.to("cpu")
@@ -284,7 +286,7 @@ class PersonalizedBase(Dataset):
 
         z = self.datas[ i % self.num_images ][0].squeeze(0)
         clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
-        if self.ti_token_string is None:
+        if self.train_text_encoder is False:
             text = self.datas[ i % self.num_images ][2].squeeze(0)
         else:
             text = self.datas[ i % self.num_images ][2]

@@ -110,7 +110,7 @@ def get_config():
     config.lora_dim = 8
     config.lora_alpha = 4
     config.lora_dropout = 0.05
-    config.train_text_encoder = False
+    config.train_text_encoder = True
     config.text_encoder_lr = 2e-5
     config.train_nnet = True
     config.nnet_lr = 2e-5
