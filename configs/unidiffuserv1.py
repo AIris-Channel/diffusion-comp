@@ -22,6 +22,8 @@ def get_config():
     config.save_interval = 1e100
     config.save_best = True
     config.max_step = 5000
+    config.use_epoch = True
+    config.max_epoch = 1000
 
     config.num_workers = 1
     config.batch_size = 1
