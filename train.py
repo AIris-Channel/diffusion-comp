@@ -285,7 +285,7 @@ def train(config):
             accelerator.wait_for_everyone()
 
             if config.use_epoch:
-                if total_step >= config.max_epoch * len(train_dataset) // config.batch_size:
+                if total_step >= config.max_epoch * train_dataset.num_images // config.batch_size:
                     if not config.save_best:
                         logging.info(f"saving final ckpts to {config.outdir}...")
                         train_state.save(os.path.join(config.outdir, 'final.ckpt')) 
