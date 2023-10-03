@@ -216,14 +216,16 @@ class PersonalizedBase(Dataset):
         self.reg = reg
         self.ti_token_string = ti_token_string
         self.train_text_encoder = train_text_encoder
+        self.flip_p = flip_p
         
         self.disc_prompt = f"a photo of a sks {self.placeholder_token}"
         
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
         self.datas = []
+        self.flip_datas = []
         for i in range(self.num_images):
             pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i])).convert("RGB")
-            
+            pil_image_flip = pil_image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
             
             placeholder_string = self.placeholder_token
             if self.coarse_class_text:
@@ -242,34 +244,39 @@ class PersonalizedBase(Dataset):
             
             if self.ti_token_string is not None:
                 text = text +',' + self.ti_token_string
+            
             img = vae_transform(self.resolution,crop_face=self.crop_face)(pil_image)
+            img_flip = vae_transform(self.resolution,crop_face=self.crop_face)(pil_image_flip)
             img4clip = clip_transform(224,crop_face=self.crop_face)(pil_image)
+            img4clip_flip = clip_transform(224,crop_face=self.crop_face)(pil_image_flip)
+            
             
             img = img.to("cuda").unsqueeze(0)
+            img_flip = img_flip.to("cuda").unsqueeze(0)
             img4clip = img4clip.to("cuda").unsqueeze(0)
+            img4clip_flip = img4clip_flip.to("cuda").unsqueeze(0)
+            
             
             
   
             z = autoencoder.encode(img)
+            z_flip = autoencoder.encode(img_flip)
             clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
+            clip_img_flip = clip_img_model.encode_image(img4clip_flip).unsqueeze(1)
+            
             if self.train_text_encoder is False:
                 text = clip_text_model.encode(text)
                 text = caption_decoder.encode_prefix(text)
             
             data_type = 0
             z = z.to("cpu")
+            z_flip = z_flip.to("cpu")
             clip_img = clip_img.to("cpu")
+            clip_img_flip = clip_img_flip.to("cpu")
             if self.train_text_encoder is False:
                 text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
-        # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
-        
-        # if self.train_text_encoder is False: # don't use text inversion method
-        #     clip_img_model = clip_img_model.to("cpu")
-        #     autoencoder = autoencoder.to("cpu")
-        #     clip_text_model = clip_text_model.to("cpu")
-        #     caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
-        #     del caption_decoder
+            self.flip_datas.append((z_flip,clip_img_flip,text,data_type))
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
@@ -283,13 +290,20 @@ class PersonalizedBase(Dataset):
         return self._length
 
     def __getitem__(self, i):
-
-        z = self.datas[ i % self.num_images ][0].squeeze(0)
-        clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
-        if self.train_text_encoder is False:
-            text = self.datas[ i % self.num_images ][2].squeeze(0)
+        if random.random() < self.flip_p:
+            z = self.flip_datas[ i % self.num_images ][0].squeeze(0)
+            clip_img = self.flip_datas[ i % self.num_images ][1].squeeze(0)
+            if self.train_text_encoder is False:
+                text = self.flip_datas[ i % self.num_images ][2].squeeze(0)
+            else:
+                text = self.flip_datas[ i % self.num_images ][2]
+            data_type = self.flip_datas[ i % self.num_images ][3]
         else:
-            text = self.datas[ i % self.num_images ][2]
-        data_type = self.datas[ i % self.num_images ][3]
-        
+            z = self.datas[ i % self.num_images ][0].squeeze(0)
+            clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
+            if self.train_text_encoder is False:
+                text = self.datas[ i % self.num_images ][2].squeeze(0)
+            else:
+                text = self.datas[ i % self.num_images ][2]
+            data_type = self.datas[ i % self.num_images ][3]
         return z,clip_img,text,data_type
