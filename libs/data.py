@@ -186,6 +186,7 @@ class PersonalizedBase(Dataset):
                  crop_face = False,
                  use_blip_caption = False,
                  ti_token_string = None,
+                 flip_horizontal = False,
                  ):
 
         self.data_root = data_root
@@ -193,6 +194,8 @@ class PersonalizedBase(Dataset):
         self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
 
         self.num_images = len(self.image_paths)
+        if flip_horizontal:
+            self.num_images *= 2
         self._length = self.num_images 
 
         self.placeholder_token = class_word
@@ -203,6 +206,7 @@ class PersonalizedBase(Dataset):
         self.resolution = resolution
         self.crop_face = crop_face
         self.use_blip_caption = use_blip_caption
+        self.flip_horizontal = flip_horizontal
 
         self.coarse_class_text = coarse_class_text
 
@@ -219,8 +223,8 @@ class PersonalizedBase(Dataset):
         
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
         self.datas = []
-        for i in range(self.num_images):
-            pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i])).convert("RGB")
+        for image_path in self.image_paths:
+            pil_image = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
             
             
             placeholder_string = self.placeholder_token
@@ -234,7 +238,7 @@ class PersonalizedBase(Dataset):
 
             # default to score-sde preprocessing
             if self.use_blip_caption:
-                caption_text = open(re.sub(r'\.(jpe?g|png)$', '.txt', self.image_paths[i])).read().strip()
+                caption_text = open(re.sub(r'\.(jpe?g|png)$', '.txt', image_path)).read().strip()
                 caption_text = caption_text.replace("boy","sks boy")
                 text = caption_text
             
@@ -260,6 +264,14 @@ class PersonalizedBase(Dataset):
             if self.ti_token_string is None:
                 text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
+
+            if self.flip_horizontal:
+                img = torch.flip(img, [-1])
+                img4clip = torch.flip(img4clip, [-1])
+                z = autoencoder.encode(img).to("cpu")
+                clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1).to("cpu")
+                self.datas.append((z,clip_img,text,data_type))
+
         # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
         
         # if self.ti_token_string is None: # don't use text inversion method
