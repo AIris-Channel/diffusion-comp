@@ -220,6 +220,7 @@ class PersonalizedBase(Dataset):
         
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
         self.datas = []
+        self.datas_flip = []
         for image_path in self.image_paths:
             pil_image = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
             
@@ -262,7 +263,6 @@ class PersonalizedBase(Dataset):
                 text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
 
-            self.datas_flip = []
             img = torch.flip(img, [-1])
             img4clip = torch.flip(img4clip, [-1])
             z = autoencoder.encode(img).to("cpu")
