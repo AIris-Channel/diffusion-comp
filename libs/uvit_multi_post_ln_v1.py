@@ -292,4 +292,9 @@ class UViT(nn.Module):
         clip_img_out = self.clip_img_out(clip_img_out)
 
         text_out = self.text_out(text_out)
-        return img_out, clip_img_out, text_out
+
+        if face_emb is not None:
+            face_emb_out = self.face_out(clip_img_out)
+            return img_out, clip_img_out, text_out, face_emb_out
+        else:
+            return img_out, clip_img_out, text_out

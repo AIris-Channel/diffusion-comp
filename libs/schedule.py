@@ -104,12 +104,13 @@ def LSimple_T2I_face(img, clip_img, text, face_emb, data_type, nnet, schedule, d
     img_eps, clip_img_eps, face_emb_eps = eps
     img_n, clip_img_n, face_emb_n = xn
     n = n.to(device)
-    img_out, clip_img_out, text_out = nnet(img_n, clip_img_n, text, t_img=n, t_text=torch.zeros_like(n, device=device), data_type=data_type, face_emb=face_emb_n)
+    img_out, clip_img_out, text_out, face_emb_out = nnet(img_n, clip_img_n, text, t_img=n, t_text=torch.zeros_like(n, device=device), data_type=data_type, face_emb=face_emb_n)
 
     loss_img = mos(img_eps - img_out)
-    loss_img_clip = mos(clip_img_eps + face_emb_eps - clip_img_out)
-    loss = loss_img + loss_img_clip + 0. * mos(text_out)
-    return loss, loss_img, loss_img_clip, 0.
+    loss_img_clip = mos(clip_img_eps - clip_img_out)
+    loss_face = mos(face_emb_eps - face_emb_out)
+    loss = loss_img + loss_img_clip + loss_face + 0. * mos(text_out)
+    return loss, loss_img, loss_img_clip, 0., loss_face
 
 
 

@@ -153,7 +153,7 @@ def train(config):
 
         with torch.cuda.amp.autocast():
             if config.train_face_emb:
-                loss, loss_img, loss_clip_img, loss_text = LSimple_T2I_face(
+                loss, loss_img, loss_clip_img, loss_text, loss_face = LSimple_T2I_face(
                     img=z, clip_img=clip_img, text=text, face_emb=face_emb, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
             else:
                 loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
@@ -173,6 +173,9 @@ def train(config):
             loss_img.detach().mean()).mean().item()
         metrics['loss_clip_img'] = accelerator.gather(
             loss_clip_img.detach().mean()).mean().item()
+        if config.train_face_emb:
+            metrics['loss_face'] = accelerator.gather(
+                loss_face.detach().mean()).mean().item()
         if config.use_discriminator:
             metrics['disc_loss'] = disc_loss
         # metrics['scale'] = accelerator.scaler.get_scale()
