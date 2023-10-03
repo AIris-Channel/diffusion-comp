@@ -284,17 +284,17 @@ class UViT(nn.Module):
 
         x = self.norm(x)
 
-        t_img_token_out, t_text_token_out, token_embed_out, text_out, clip_img_out, img_out = x.split((1, 1, 1, num_text_tokens, 1, num_img_tokens), dim=1)
+        t_img_token_out, t_text_token_out, token_embed_out, text_out, clip_img_out_, img_out = x.split((1, 1, 1, num_text_tokens, 1, num_img_tokens), dim=1)
 
         img_out = self.decoder_pred(img_out)
         img_out = unpatchify(img_out, self.in_chans)
 
-        clip_img_out = self.clip_img_out(clip_img_out)
+        clip_img_out = self.clip_img_out(clip_img_out_)
 
         text_out = self.text_out(text_out)
 
         if face_emb is not None:
-            face_emb_out = self.face_out(clip_img_out)
+            face_emb_out = self.face_out(clip_img_out_)
             return img_out, clip_img_out, text_out, face_emb_out
         else:
             return img_out, clip_img_out, text_out
