@@ -186,7 +186,6 @@ class PersonalizedBase(Dataset):
                  crop_face = False,
                  use_blip_caption = False,
                  ti_token_string = None,
-                 flip_horizontal = False,
                  ):
 
         self.data_root = data_root
@@ -194,9 +193,8 @@ class PersonalizedBase(Dataset):
         self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
 
         self.num_images = len(self.image_paths)
-        if flip_horizontal:
-            self.num_images *= 2
         self._length = self.num_images 
+        self.flip_p = flip_p
 
         self.placeholder_token = class_word
         self.resolution = resolution
@@ -206,7 +204,6 @@ class PersonalizedBase(Dataset):
         self.resolution = resolution
         self.crop_face = crop_face
         self.use_blip_caption = use_blip_caption
-        self.flip_horizontal = flip_horizontal
 
         self.coarse_class_text = coarse_class_text
 
@@ -265,12 +262,12 @@ class PersonalizedBase(Dataset):
                 text = text.to("cpu")
             self.datas.append((z,clip_img,text,data_type))
 
-            if self.flip_horizontal:
-                img = torch.flip(img, [-1])
-                img4clip = torch.flip(img4clip, [-1])
-                z = autoencoder.encode(img).to("cpu")
-                clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1).to("cpu")
-                self.datas.append((z,clip_img,text,data_type))
+            self.datas_flip = []
+            img = torch.flip(img, [-1])
+            img4clip = torch.flip(img4clip, [-1])
+            z = autoencoder.encode(img).to("cpu")
+            clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1).to("cpu")
+            self.datas_flip.append((z,clip_img,text,data_type))
 
         # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
         
@@ -293,13 +290,21 @@ class PersonalizedBase(Dataset):
         return self._length
 
     def __getitem__(self, i):
-
-        z = self.datas[ i % self.num_images ][0].squeeze(0)
-        clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
-        if self.ti_token_string is None:
-            text = self.datas[ i % self.num_images ][2].squeeze(0)
+        if random.random() < self.flip_p:
+            z = self.datas_flip[ i % self.num_images ][0].squeeze(0)
+            clip_img = self.datas_flip[ i % self.num_images ][1].squeeze(0)
+            if self.ti_token_string is None:
+                text = self.datas_flip[ i % self.num_images ][2].squeeze(0)
+            else:
+                text = self.datas_flip[ i % self.num_images ][2]
+            data_type = self.datas_flip[ i % self.num_images ][3]
         else:
-            text = self.datas[ i % self.num_images ][2]
-        data_type = self.datas[ i % self.num_images ][3]
+            z = self.datas[ i % self.num_images ][0].squeeze(0)
+            clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
+            if self.ti_token_string is None:
+                text = self.datas[ i % self.num_images ][2].squeeze(0)
+            else:
+                text = self.datas[ i % self.num_images ][2]
+            data_type = self.datas[ i % self.num_images ][3]
         
         return z,clip_img,text,data_type
