@@ -186,6 +186,7 @@ class PersonalizedBase(Dataset):
                  crop_face = False,
                  use_blip_caption = False,
                  ti_token_string = None,
+                 train_face_emb = False,
                  ):
 
         self.data_root = data_root
@@ -203,6 +204,7 @@ class PersonalizedBase(Dataset):
         self.resolution = resolution
         self.crop_face = crop_face
         self.use_blip_caption = use_blip_caption
+        self.train_face_emb = train_face_emb
 
         self.coarse_class_text = coarse_class_text
 
@@ -218,6 +220,10 @@ class PersonalizedBase(Dataset):
         self.disc_prompt = f"a photo of a sks {self.placeholder_token}"
         
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
+        if self.train_face_emb:
+            from score_utils.face_model import FaceAnalysis
+            face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+            face_model.prepare(ctx_id=0, det_size=(640, 640))
         self.datas = []
         for i in range(self.num_images):
             pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i])).convert("RGB")
@@ -259,7 +265,15 @@ class PersonalizedBase(Dataset):
             clip_img = clip_img.to("cpu")
             if self.ti_token_string is None:
                 text = text.to("cpu")
-            self.datas.append((z,clip_img,text,data_type))
+            
+            if self.train_face_emb:
+                faces = face_model.get(np.array(pil_image)[:,:,::-1], max_num=1)
+                face_emb = torch.Tensor(faces[0]['embedding']).unsqueeze(0)
+                face_emb /= face_emb.norm(dim=-1, keepdim=True)
+                face_emb = face_emb.unsqueeze(0).to("cpu")
+                self.datas.append((z,clip_img,text,data_type,face_emb))
+            else:
+                self.datas.append((z,clip_img,text,data_type))
         # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
         
         # if self.ti_token_string is None: # don't use text inversion method
@@ -289,5 +303,9 @@ class PersonalizedBase(Dataset):
         else:
             text = self.datas[ i % self.num_images ][2]
         data_type = self.datas[ i % self.num_images ][3]
-        
-        return z,clip_img,text,data_type
+
+        if self.train_face_emb:
+            face_emb = self.datas[ i % self.num_images ][4].squeeze(0)
+            return z,clip_img,text,data_type,face_emb
+        else:
+            return z,clip_img,text,data_type

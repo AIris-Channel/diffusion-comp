@@ -92,7 +92,8 @@ def get_config():
         text_dim=config.get_ref('text_dim'),
         num_text_tokens=77,
         clip_img_dim=config.get_ref('clip_img_dim'),
-        use_checkpoint=False
+        use_checkpoint=False,
+        face_emb=True,
     )
 
     # sample
@@ -125,5 +126,7 @@ def get_config():
     config.use_discriminator = False
     config.disc_steps = 30
     config.disc_loss_weight = 1e-2
+
+    config.train_face_emb = config.nnet.face_emb
     
     return config

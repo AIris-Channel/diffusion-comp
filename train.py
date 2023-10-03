@@ -69,7 +69,7 @@ def train(config):
     """
     # process data
     train_dataset = PersonalizedBase(
-        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True,use_blip_caption=config.use_blip_caption)
+        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True,use_blip_caption=config.use_blip_caption,train_face_emb=config.train_face_emb)
     train_dataset.prepare(autoencoder, clip_img_model,
                           clip_text_model, caption_decoder)
 
@@ -135,7 +135,11 @@ def train(config):
 
     def train_step():   
         metrics = dict()
-        z, clip_img, text, data_type = next(train_data_generator)
+        if config.train_face_emb:
+            z, clip_img, text, data_type, face_emb = next(train_data_generator)
+            face_emb = face_emb.to(device)
+        else:
+            z, clip_img, text, data_type = next(train_data_generator)
         z = z.to(device)
         clip_img = clip_img.to(device)
         text = text.to(device)
