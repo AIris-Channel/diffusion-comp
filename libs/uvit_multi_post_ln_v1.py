@@ -159,7 +159,7 @@ class UViT(nn.Module):
     def __init__(self, img_size, in_chans, patch_size, embed_dim=768, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, pos_drop_rate=0., drop_rate=0., attn_drop_rate=0.,
                  norm_layer=nn.LayerNorm, mlp_time_embed=False, use_checkpoint=False,
-                 text_dim=None, num_text_tokens=None, clip_img_dim=None):
+                 text_dim=None, num_text_tokens=None, clip_img_dim=None, face_emb=False):
         super().__init__()
         self.in_chans = in_chans
         self.patch_size = patch_size
@@ -187,6 +187,10 @@ class UViT(nn.Module):
 
         self.clip_img_embed = nn.Linear(clip_img_dim, embed_dim)
         self.clip_img_out = nn.Linear(embed_dim, clip_img_dim)
+
+        if face_emb:
+            self.face_embed = nn.Linear(512, embed_dim)
+            self.face_out = nn.Linear(embed_dim, 512)
 
         self.num_text_tokens = num_text_tokens
         self.num_tokens = 1 + 1 + num_text_tokens + 1 + self.num_patches
@@ -233,7 +237,7 @@ class UViT(nn.Module):
     def no_weight_decay(self):
         return {'pos_embed'}
 
-    def forward(self, img, clip_img, text, t_img, t_text, data_type):
+    def forward(self, img, clip_img, text, t_img, t_text, data_type, face_emb=None):
         _, _, H, W = img.shape
 
         img = self.patch_embed(img)
@@ -246,6 +250,10 @@ class UViT(nn.Module):
         text = self.text_embed(text)
         clip_img = self.clip_img_embed(clip_img)
         token_embed = self.token_embedding(data_type).unsqueeze(dim=1)
+
+        if face_emb is not None:
+            face_emb = self.face_embed(face_emb)
+            clip_img += face_emb
 
         x = torch.cat((t_img_token, t_text_token, token_embed, text, clip_img, img), dim=1)
 

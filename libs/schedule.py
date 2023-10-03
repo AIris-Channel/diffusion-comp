@@ -96,6 +96,22 @@ def LSimple_T2I(img, clip_img, text, data_type, nnet, schedule, device):
 
 
 
+def LSimple_T2I_face(img, clip_img, text, face_emb, data_type, nnet, schedule, device):
+    r"""
+    文到图loss
+    """
+    n, eps, xn = schedule.sample([img, clip_img, face_emb])  # n in {1, ..., 1000}
+    img_eps, clip_img_eps, face_emb_eps = eps
+    img_n, clip_img_n, face_emb_n = xn
+    n = n.to(device)
+    img_out, clip_img_out, text_out = nnet(img_n, clip_img_n, text, t_img=n, t_text=torch.zeros_like(n, device=device), data_type=data_type, face_emb=face_emb_n)
+
+    loss_img = mos(img_eps - img_out)
+    loss_img_clip = mos(clip_img_eps + face_emb_eps - clip_img_out)
+    loss = loss_img + loss_img_clip + 0. * mos(text_out)
+    return loss, loss_img, loss_img_clip, 0.
+
+
 
 def get_by_bool(lst, bool_tensor):
     bool_list = bool_tensor.tolist()

@@ -18,7 +18,7 @@ import clip
 from libs.clip import FrozenCLIPEmbedder
 from libs.caption_decoder import CaptionDecoder
 from torch.utils.data import DataLoader
-from libs.schedule import stable_diffusion_beta_schedule, Schedule, LSimple_T2I
+from libs.schedule import stable_diffusion_beta_schedule, Schedule, LSimple_T2I, LSimple_T2I_face
 import argparse
 import yaml
 import datetime
@@ -152,8 +152,12 @@ def train(config):
 
 
         with torch.cuda.amp.autocast():
-            loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
-                img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
+            if config.train_face_emb:
+                loss, loss_img, loss_clip_img, loss_text = LSimple_T2I_face(
+                    img=z, clip_img=clip_img, text=text, face_emb=face_emb, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
+            else:
+                loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
+                    img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
             loss = loss.mean()
             if config.use_discriminator:
                 loss += disc_loss
