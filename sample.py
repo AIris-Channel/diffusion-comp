@@ -263,6 +263,7 @@ def get_args():
     parser.add_argument("--output_path", type=str, default="outputs/boy1", help="output dir for generated images")
     parser.add_argument("--add_prompt", nargs='*', help="prompt added")
     parser.add_argument("--lora_multiplier", type=float, default=1, help="lora multiplier")
+    parser.add_argument("--vae_path", type=str, default="", help="vae path")
     return parser.parse_args()
 
 
@@ -287,6 +288,8 @@ def main(argv=None):
     nnet = UViT(**config.nnet)
     print(f'load nnet from {config.nnet_path}')
     nnet.load_state_dict(torch.load(config.nnet_path, map_location='cpu'), False)
+    if args.vae_path:
+        config.autoencoder.pretrained_path = args.vae_path
     autoencoder = libs.autoencoder.get_model(**config.autoencoder)
     clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device)
     clip_text_model.to("cpu")
