@@ -306,6 +306,8 @@ def get_args():
                         help="the dir to put logs")
     parser.add_argument("--nnet_path", type=str,
                         default="models/uvit_v1.pth", help="nnet path to resume")
+    
+    parser.add_argument("--vae_path", type=str, default="", help="vae path")
 
     return parser.parse_args()
 
@@ -320,6 +322,9 @@ def main():
     config.outdir = args.outdir
     config.data = args.data
     data_name = Path(config.data).stem
+
+    if args.vae_path:
+        config.autoencoder.pretrained_path = args.vae_path
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     config.workdir = os.path.join(
