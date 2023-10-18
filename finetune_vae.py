@@ -8,6 +8,8 @@ from libs.data import vae_transform
 import argparse
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
+import numpy as np
+import random
 
 
 class VAE_Dataset(Dataset):
@@ -24,6 +26,25 @@ class VAE_Dataset(Dataset):
     
     def __getitem__(self, idx):
         return self.data[idx]
+    
+
+def encode_decode(in_path, out_path, autoencoder, device):
+    image = ImageOps.exif_transpose(Image.open(in_path)).convert("RGB")
+    image = vae_transform(512,crop_face=True)(image).to(device).unsqueeze(0)
+    z = autoencoder.encode(image)
+
+    def unpreprocess(v):
+        v = 0.5 * (v + 1.)
+        v.clamp_(0., 1.)
+        return v
+    
+    @torch.cuda.amp.autocast()
+    def decode(_batch):
+        return autoencoder.decode(_batch)
+
+    z = (unpreprocess(decode(z))[0]*255).cpu().numpy().astype(np.uint8).transpose(1, 2, 0)
+    
+    Image.fromarray(z).save(out_path)
 
 
 def get_args():
@@ -42,6 +63,9 @@ def get_args():
 
 
 def train(config):
+    log_interval=100
+    eval_interval=100
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_dataset = VAE_Dataset(config.data, resolution=512, crop_face=True)
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
@@ -51,6 +75,8 @@ def train(config):
     loss_fn = torch.nn.MSELoss()
     data_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
     total_steps = 1000
+    total_loss = 0
+    best_score = 0
     for step in tqdm.tqdm(range(total_steps)):
         for batch in data_loader:
             batch = batch.to(device)
@@ -60,9 +86,35 @@ def train(config):
             loss = loss_fn(x, batch)
             loss.backward()
             optimizer.step()
-        if step % 100 == 0:
-            print(f"step: {step}, loss: {loss.item()}")
-    torch.save(autoencoder.state_dict(), os.path.join(config.outdir, 'autoencoder.pth'))
+            total_loss += loss.item()
+        if step % log_interval == 0:
+            print(f"step {step}: loss {total_loss / log_interval}")
+            total_loss = 0
+        if step % eval_interval == 0:
+            for task in ['boy1', 'boy2', 'girl1', 'girl2']:
+                if task in config.data:
+                    continue
+            ori_imgs=[f for f in os.listdir(f'train_data/{task}') if f.endswith('jpg') or f.endswith('jpeg')]
+            os.makedirs(f'pseudo/{task}_sim', exist_ok=True)
+            for i in range(3):
+                encode_decode(f'train_data/{task}/{random.choice(ori_imgs)}', f'pseudo/{task}_sim/0-{str(i).zfill(3)}.jpg', autoencoder, device)
+            os.makedirs(f'pseudo/{task}_edit', exist_ok=True)
+            for j in range(24):
+                for i in range(3):
+                    encode_decode(f'train_data/{task}/{random.choice(ori_imgs)}', f'pseudo/{task}_edit/{j}-{str(i).zfill(3)}.jpg', autoencoder, device)
+            from score import score_one_task
+            scores = score_one_task('./train_data/', './eval_prompts_advance/', './pseudo/', task)
+            current_score = sum([
+                scores['sim_face'] * config.sim_face_ratio +
+                scores['sim_clip'] * config.sim_clip_ratio +
+                scores['edit_face'] * config.edit_face_ratio +
+                scores['edit_clip'] * config.edit_clip_ratio +
+                scores['edit_text_clip'] * config.edit_text_clip_ratio
+            ])
+            if current_score > best_score:
+                best_score = current_score
+                print(f"step {step}: best score {best_score}")
+                torch.save(autoencoder.state_dict(), os.path.join(config.outdir, 'autoencoder.pth'))
 
 
 def main():
