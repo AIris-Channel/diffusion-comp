@@ -42,7 +42,7 @@ def encode_decode(in_path, out_path, autoencoder, device):
     def decode(_batch):
         return autoencoder.decode(_batch)
 
-    z = (unpreprocess(decode(z))[0]*255).cpu().numpy().astype(np.uint8).transpose(1, 2, 0)
+    z = (unpreprocess(decode(z))[0]*255).cpu().detach().numpy().astype(np.uint8).transpose(1, 2, 0)
     
     Image.fromarray(z).save(out_path)
 
@@ -115,6 +115,8 @@ def train(config):
                 best_score = current_score
                 print(f"step {step}: best score {best_score}")
                 torch.save(autoencoder.state_dict(), os.path.join(config.outdir, 'autoencoder.pth'))
+                with open('vae_log.txt', 'a', encoding='utf-8') as f:
+                    f.write(f"step {step}: best score {best_score}\n")
 
 
 def main():
