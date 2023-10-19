@@ -93,7 +93,7 @@ def train(config):
         if step % eval_interval == 0:
             for task in ['boy1', 'boy2', 'girl1', 'girl2']:
                 if task in config.data:
-                    continue
+                    break
             ori_imgs=[f for f in os.listdir(f'train_data/{task}') if f.endswith('jpg') or f.endswith('jpeg')]
             os.makedirs(f'pseudo/{task}_sim', exist_ok=True)
             for i in range(3):
