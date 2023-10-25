@@ -288,8 +288,11 @@ def main(argv=None):
     nnet = UViT(**config.nnet)
     print(f'load nnet from {config.nnet_path}')
     nnet.load_state_dict(torch.load(config.nnet_path, map_location='cpu'), False)
+
+    config.autoencoder.pretrained_path = os.path.join(config.outdir, 'final.ckpt', 'autoencoder.pth')
     if args.vae_path:
         config.autoencoder.pretrained_path = args.vae_path
+
     autoencoder = libs.autoencoder.get_model(**config.autoencoder)
     clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device)
     clip_text_model.to("cpu")

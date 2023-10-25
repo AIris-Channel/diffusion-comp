@@ -63,8 +63,9 @@ def get_args():
 
 
 def train(config):
-    log_interval=100
-    eval_interval=100
+    total_steps = config.finetune_vae_steps
+    log_interval = config.vae_log_interval
+    eval_interval = config.vae_eval_interval
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_dataset = VAE_Dataset(config.data, resolution=512, crop_face=True)
@@ -74,7 +75,7 @@ def train(config):
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=1e-4)
     loss_fn = torch.nn.MSELoss()
     data_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    total_steps = 1000
+    
     total_loss = 0
     best_score = 0
     for step in tqdm.tqdm(range(total_steps)):
@@ -114,20 +115,22 @@ def train(config):
             if current_score > best_score:
                 best_score = current_score
                 print(f"step {step}: best score {best_score}")
-                torch.save(autoencoder.state_dict(), os.path.join(config.outdir, 'autoencoder.pth'))
+                if config.vae_save_best:
+                    torch.save(autoencoder.state_dict(), os.path.join(config.outdir, 'final.ckpt', 'autoencoder.pth'))
                 with open('vae_log.txt', 'a', encoding='utf-8') as f:
                     f.write(f"step {step}: best score {best_score}\n")
+    if not config.vae_save_best:
+        torch.save(autoencoder.state_dict(), os.path.join(config.outdir, 'final.ckpt', 'autoencoder.pth'))
 
 
-def main():
+def main(logdir, outdir, data):
     # 赛手需要根据自己的需求修改config file
     from configs.unidiffuserv1 import get_config
     config = get_config()
     config_name = "unidiffuserv1"
-    args = get_args()
-    config.log_dir = args.logdir
-    config.outdir = args.outdir
-    config.data = args.data
+    config.log_dir = logdir
+    config.outdir = outdir
+    config.data = data
     data_name = Path(config.data).stem
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
@@ -141,4 +144,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    args = get_args()
+    main(args.logdir, args.outdir, args.data)

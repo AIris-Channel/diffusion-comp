@@ -21,7 +21,7 @@ def get_config():
     config.eval_interval = 500
     config.save_interval = 1e100
     config.save_best = True
-    config.max_step = 5000
+    config.max_step = 10000
 
     config.num_workers = 1
     config.batch_size = 1
@@ -125,5 +125,12 @@ def get_config():
     config.use_discriminator = False
     config.disc_steps = 30
     config.disc_loss_weight = 1e-2
+
+    #finetune vae
+    config.finetune_vae = True
+    config.finetune_vae_steps = 1000
+    config.vae_eval_interval = 100
+    config.vae_log_interval = 100
+    config.vae_save_best = True
     
     return config

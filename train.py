@@ -203,7 +203,7 @@ def train(config):
                 
                 
                         # 基于给定的prompt进行生成
-                        prompts = json.load(open(prompt_path, "r"))
+                        prompts = json.load(open(prompt_path, "r"))[:2]
                         for prompt_index, prompt in enumerate(prompts):
                             # 根据训练策略
                             if "boy" in prompt:
@@ -325,6 +325,13 @@ def main():
 
     if args.vae_path:
         config.autoencoder.pretrained_path = args.vae_path
+
+    if config.finetune_vae:
+        from libs.finetune_vae import main as vae_main
+        vae_main(args.logdir, args.outdir, args.data)
+        config.autoencoder.pretrained_path = os.path.join(config.outdir, 'final.ckpt', 'autoencoder.pth')
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     config.workdir = os.path.join(
