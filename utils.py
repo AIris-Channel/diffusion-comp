@@ -208,7 +208,7 @@ def setup(config):
     import accelerate
     import wandb
 
-    mp.set_start_method('spawn')
+    mp.set_start_method('spawn', force=True)
     assert config.gradient_accumulation_steps == 1, \
         'fix the lr_scheduler bug before using larger gradient_accumulation_steps'
     accelerator = accelerate.Accelerator(gradient_accumulation_steps=config.gradient_accumulation_steps)
