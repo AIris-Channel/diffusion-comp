@@ -289,7 +289,7 @@ def main(argv=None):
     print(f'load nnet from {config.nnet_path}')
     nnet.load_state_dict(torch.load(config.nnet_path, map_location='cpu'), False)
 
-    config.autoencoder.pretrained_path = os.path.join(config.outdir, 'final.ckpt', 'autoencoder.pth')
+    config.autoencoder.pretrained_path = os.path.join(args.restore_path, 'final.ckpt', 'autoencoder.pth')
     if args.vae_path:
         config.autoencoder.pretrained_path = args.vae_path
 
