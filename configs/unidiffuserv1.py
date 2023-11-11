@@ -17,11 +17,11 @@ def get_config():
     config.text_dim = 64  # reduce dimension
     config.data_type = 1
     config.gradient_accumulation_steps = 1
-    config.log_interval = 10
-    config.eval_interval = 500
+    config.log_interval = 50
+    config.eval_interval = 5000
     config.save_interval = 1e100
     config.save_best = True
-    config.max_step = 10000
+    config.max_step = 3000
 
     config.num_workers = 1
     config.batch_size = 1

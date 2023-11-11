@@ -28,10 +28,8 @@ def process_one_json(json_data, image_output_path, context={}):
     clip_img_model = context['clip_img_model']
     clip_text_model = context['clip_text_model']
     caption_decoder = context['caption_decoder']
-    accelerator = context['accelerator']
-    device = context['device']
     config = context['config']
-
+    train_state.step = 0
     """
     处理数据部分
     """
@@ -46,6 +44,7 @@ def process_one_json(json_data, image_output_path, context={}):
     config.ckpt_root = os.path.join(config.workdir, 'ckpts')
     config.meta_dir = os.path.join(config.workdir, "meta")
     os.makedirs(config.workdir, exist_ok=True)
+    accelerator, device = utils.setup(config)
 
     train_dataset = PersonalizedBase(
         json_data['source_group'], resolution=512, class_word=class_word, crop_face=True, use_blip_caption=config.use_blip_caption)
@@ -79,7 +78,6 @@ def process_one_json(json_data, image_output_path, context={}):
     """
     nnet = train_state.nnet
     nnet.to(device)
-    lr_scheduler = train_state.lr_scheduler
     # prepare lorann
     lorann = create_network(1.0, config.lora_dim, config.lora_alpha, autoencoder, clip_text_model, nnet, neuron_dropout=config.lora_dropout)
     lorann.to(device)
@@ -89,6 +87,7 @@ def process_one_json(json_data, image_output_path, context={}):
     )
     print(f"Training params: {utils.cnt_params(lorann)}")
     optimizer = utils.get_optimizer(trainable_params, **config.optimizer)
+    lr_scheduler = utils.get_lr_scheduler(optimizer, **config.lr_scheduler)
 
     if config.train_text_encoder and config.train_nnet:
         nnet, clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
@@ -205,8 +204,8 @@ def process_one_json(json_data, image_output_path, context={}):
         return scores
         
     def loop():
-        log_step = 0
-        eval_step = 0
+        log_step = config.log_interval
+        eval_step = config.eval_interval
         save_step = config.save_interval
 
         best_score = float('-inf')
@@ -238,9 +237,9 @@ def process_one_json(json_data, image_output_path, context={}):
                         dict(step=total_step, **metrics)))
                     wandb.log(utils.add_prefix(
                         metrics, 'train'), step=total_step)
-                    if config.save_best:
-                        wandb.log(utils.add_prefix(
-                            scores, 'eval'), step=total_step)
+                    # if config.save_best:
+                    #     wandb.log(utils.add_prefix(
+                    #         scores, 'eval'), step=total_step)
                     log_step += config.log_interval
 
       
@@ -258,8 +257,10 @@ def process_one_json(json_data, image_output_path, context={}):
                     logging.info(f"saving final ckpts to {config.outdir}...")
                     train_state.save(os.path.join(config.outdir, 'final.ckpt')) 
                 break
+        return train_state
 
-    loop()
+    train_state = loop()
+    nnet = train_state.nnet
 
     """
     生成图片
@@ -309,8 +310,7 @@ def prepare_context():
     config = get_config()
     config.log_dir = 'logs'
     config.nnet_path = 'models/uvit_v1.pth'
-
-    accelerator, device = utils.setup(config)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     train_state = utils.initialize_train_state(config, device, uvit_class=UViT)
     logging.info(f'load nnet from {config.nnet_path}')
@@ -335,8 +335,6 @@ def prepare_context():
         'clip_img_model': clip_img_model,
         'clip_text_model': clip_text_model,
         'caption_decoder': caption_decoder,
-        'accelerator': accelerator,
-        'device': device,
         'config': config
     }
 
