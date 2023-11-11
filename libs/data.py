@@ -173,7 +173,7 @@ def vae_transform(resolution,crop_face=False):
 
 class PersonalizedBase(Dataset):
     def __init__(self,
-                 data_root,
+                 source_group,
                  resolution,
                  repeats=100,
                  flip_p=0.5,
@@ -188,9 +188,7 @@ class PersonalizedBase(Dataset):
                  ti_token_string = None,
                  ):
 
-        self.data_root = data_root
-
-        self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
+        self.image_paths = [os.path.join('train_data', i['path']) for i in source_group]
 
         self.num_images = len(self.image_paths)
         self._length = self.num_images 

@@ -33,19 +33,12 @@ def get_config():
     config.only_load_model = True
 
     config.use_blip_caption = False
-    config.sim_face_ratio = 7.0
-    config.sim_clip_ratio = 3.0
-    config.edit_face_ratio = 7.0
-    config.edit_clip_ratio = 3.0
-    config.edit_text_clip_ratio = 6.0
-    
-    # average the ratio
-    ratio_sum = config.sim_face_ratio + config.sim_clip_ratio + config.edit_face_ratio + config.edit_clip_ratio + config.edit_text_clip_ratio
-    config.sim_face_ratio /= ratio_sum
-    config.sim_clip_ratio /= ratio_sum
-    config.edit_face_ratio /= ratio_sum
-    config.edit_clip_ratio /= ratio_sum
-    config.edit_text_clip_ratio /= ratio_sum
+    config.edit_face_max = 1.0
+    config.edit_face_min = 0.036952365
+    config.edit_face_ratio = 2.5
+    config.edit_text_max = 0.282246063
+    config.edit_text_min = 0.217716218
+    config.edit_text_ratio = 1.0
     
     config.save_target_key = 'lorann'
 
@@ -127,7 +120,7 @@ def get_config():
     config.disc_loss_weight = 1e-2
 
     #finetune vae
-    config.finetune_vae = True
+    config.finetune_vae = False
     config.finetune_vae_steps = 1000
     config.vae_eval_interval = 100
     config.vae_log_interval = 100

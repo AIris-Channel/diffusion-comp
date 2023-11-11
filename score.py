@@ -140,27 +140,16 @@ class Evaluator():
 def read_img_pil(p):
     return Image.open(p)
 
-def score_one_task(dataset_base, prompts_base, outputs_base, taskname):
+def score_one_task(source_group, prompts, outputs_base, taskname):
     eval = Evaluator()
     
-    DATANAMES = [taskname]
-    SIM_TASKNAMES = [f'{taskname}_sim']
-    EDIT_TASKNAMES = [f'{taskname}_edit']
-    
     ## folder check
-    for taskname in DATANAMES:
-        task_dataset = os.path.join(dataset_base, f'{taskname}')
-        assert os.path.exists(task_dataset), f"Missing Dataset folder: {task_dataset}"
-    for taskname in SIM_TASKNAMES + EDIT_TASKNAMES:
-        task_prompt = os.path.join(prompts_base, f'{taskname}.json')
-        assert os.path.exists(task_prompt), f"Missing Prompt file: {task_prompt}"
-        task_output = os.path.join(outputs_base, f'{taskname}')
-        assert os.path.exists(task_output), f"Missing Output folder: {task_output}"
+    task_output = os.path.join(outputs_base, f'{taskname}')
+    assert os.path.exists(task_output), f"Missing Output folder: {task_output}"
         
-    def score_task(sample_folder, dataset_folder, prompt_json):
+    def score_task(sample_folder, dataset_list, prompts):
         ## get prompt, face, and ref image from dataset folder
-        refs = glob.glob(os.path.join(dataset_folder, "*.jpg")) + glob.glob(os.path.join(dataset_folder, "*.jpeg"))
-        refs_images = [read_img_pil(ref) for ref in refs]
+        refs_images = [read_img_pil(ref) for ref in dataset_list]
         
         refs_clip = [eval.get_img_embedding(i) for i in refs_images]
         refs_clip = torch.cat(refs_clip)
@@ -177,7 +166,6 @@ def score_one_task(dataset_base, prompts_base, outputs_base, taskname):
         #### print("Emb: ", refs_embs.shape)
         
         pompt_scores = []
-        prompts = json.load(open(prompt_json, "r"))
         for prompt_index, prompt in enumerate(prompts):
             sample_scores = []
             for idx in range(0,3): ## 3 generation for each prompt
@@ -201,36 +189,19 @@ def score_one_task(dataset_base, prompts_base, outputs_base, taskname):
         task_score = np.mean(pompt_scores, axis=0)
         return task_score
     
-    ## calculate sim score
-    sim_scores = []
-    for dataname, taskname in zip(DATANAMES, SIM_TASKNAMES):
-        task_dataset = os.path.join(dataset_base, f'{dataname}')
-        task_prompt = os.path.join(prompts_base, f'{taskname}.json')
-        task_output = os.path.join(outputs_base, f'{taskname}')
-        score = score_task(task_output, task_dataset, task_prompt)
-        print(f"Score for task {taskname}: ", score)
-        sim_scores.append(score)
-        
-    sim_ave_score = np.mean(sim_scores, axis=0)
-    
+    ## calculate score
     edit_scores = []
-    for dataname, taskname in zip(DATANAMES, EDIT_TASKNAMES):
-        task_dataset = os.path.join(dataset_base, f'{dataname}')
-        task_prompt = os.path.join(prompts_base, f'{taskname}.json')
-        task_output = os.path.join(outputs_base, f'{taskname}')
-        score = score_task(task_output, task_dataset, task_prompt)
-        print(f"Score for task {taskname}: ", score)
-        edit_scores.append(score)
+    task_output = os.path.join(outputs_base, f'{taskname}')
+    dataset_list = [os.path.join('train_data', i['path']) for i in source_group]
+    score = score_task(task_output, dataset_list, prompts)
+    print(f"Score for task {taskname}: ", score)
+    edit_scores.append(score)
 
     edit_ave_score = np.mean(edit_scores, axis=0)
     
     score_dict = {
-        "sim_face": sim_ave_score[0],
-        "sim_clip": sim_ave_score[1],
-
         "edit_face": edit_ave_score[0],
-        "edit_clip": edit_ave_score[1],
-        "edit_text_clip": edit_ave_score[2],
+        "edit_text": edit_ave_score[2],
     }
     print(f"\033[91m 最终结果:\n{score_dict}\033[00m")
     return score_dict
