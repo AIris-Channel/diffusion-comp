@@ -30,6 +30,7 @@ def process_one_json(json_data, image_output_path, context={}):
     caption_decoder = context['caption_decoder']
     config = context['config']
     train_state.step = 0
+
     """
     处理数据部分
     """
@@ -162,6 +163,7 @@ def process_one_json(json_data, image_output_path, context={}):
 
         from configs.sample_config import get_config
         from sample import set_seed, sample
+        from score import Evaluator, score
         set_seed(42)
         eval_config = get_config()
         
@@ -178,20 +180,28 @@ def process_one_json(json_data, image_output_path, context={}):
         eval_config.output_path = os.path.join(image_output_path, task_name)
 
         # 基于给定的prompt进行生成
+        images = []
         prompts = json_data['caption_list']
         for prompt_index, prompt in enumerate(prompts):
             # 根据训练策略
             prompt = prompt.replace(class_word, f'sks {class_word}')
-
             eval_config.prompt = prompt
             print("sampling with prompt:", prompt)
             with torch.no_grad():
                 sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
-        
+            images.append({
+                'prompt': prompt,
+                'paths': paths
+            })
+        gen_json = {
+            "id" : json_data["id"],
+            "images" : images
+        }
         
         # then score
-        from score import score_one_task
-        scores = score_one_task(json_data['source_group'], prompts, './outputs/', data_name)
+        ev = Evaluator()
+        bound_json = json.load(open(os.path.join('bound_json_outputs', f"{json_data['id']}.json")))
+        scores = score(ev, json_data, gen_json, bound_json, 'json_out')
         with open(os.path.join(config.workdir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
             for k, v in scores.items():
@@ -223,8 +233,8 @@ def process_one_json(json_data, image_output_path, context={}):
                     eval_step += config.eval_interval
                     
                     current_score = sum([
-                        (scores['edit_face'] - config.edit_face_min) / (config.edit_face_max - config.edit_face_min) * config.edit_face_ratio +
-                        (scores['edit_text'] - config.edit_text_min) / (config.edit_text_max - config.edit_text_min) * config.edit_text_ratio
+                        scores['normed_face_ac_scores'] * config.edit_face_ratio +
+                        scores['normed_image_reward_ac_scores'] * config.edit_text_ratio
                     ])
                     
                     if current_score > best_score:
@@ -290,9 +300,11 @@ def process_one_json(json_data, image_output_path, context={}):
         print("sampling with prompt:", prompt)
         with torch.no_grad():
             sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
+        paths = [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(eval_config.n_samples)]
+        
         images.append({
             'prompt': prompt,
-            'paths': [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(eval_config.n_samples)]
+            'paths': paths
         })
 
     

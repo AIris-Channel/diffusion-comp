@@ -20,7 +20,7 @@ def get_config():
     config.log_interval = 50
     config.eval_interval = 5000
     config.save_interval = 1e100
-    config.save_best = True
+    config.save_best = False
     config.max_step = 3000
 
     config.num_workers = 1
@@ -33,11 +33,7 @@ def get_config():
     config.only_load_model = True
 
     config.use_blip_caption = False
-    config.edit_face_max = 1.0
-    config.edit_face_min = 0.036952365
     config.edit_face_ratio = 2.5
-    config.edit_text_max = 0.282246063
-    config.edit_text_min = 0.217716218
     config.edit_text_ratio = 1.0
     
     config.save_target_key = 'lorann'

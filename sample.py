@@ -280,7 +280,7 @@ def main(argv=None):
     # config.nnet_path = os.path.join(args.restore_path, "final.ckpt",'nnet.pth')
     config.nnet_path = "models/uvit_v1.pth"
     config.lorann_path = os.path.join(args.restore_path, "final.ckpt",'lorann.pth')
-    config.n_samples = 3
+    config.n_samples = 4
     config.n_iter = 1
     device = "cuda"
 
@@ -289,7 +289,7 @@ def main(argv=None):
     print(f'load nnet from {config.nnet_path}')
     nnet.load_state_dict(torch.load(config.nnet_path, map_location='cpu'), False)
 
-    config.autoencoder.pretrained_path = os.path.join(args.restore_path, 'final.ckpt', 'autoencoder.pth')
+    # config.autoencoder.pretrained_path = os.path.join(args.restore_path, 'final.ckpt', 'autoencoder.pth')
     if args.vae_path:
         config.autoencoder.pretrained_path = args.vae_path
 
@@ -336,7 +336,7 @@ def main(argv=None):
     
     
     # 基于给定的prompt进行生成
-    prompts = json.load(open(args.prompt_path, "r"))
+    prompts = json.load(open(args.prompt_path, "r"))['caption_list']
     for prompt_index, prompt in enumerate(prompts):
         # 根据训练策略
         if "boy" in prompt:
