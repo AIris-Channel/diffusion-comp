@@ -13,6 +13,7 @@ import random
 import torch
 import gc
 from libs.autocrop import get_crop_face_func
+from score_utils.face_model import FaceAnalysis
 
 
 training_templates_smallest = [
@@ -170,7 +171,13 @@ def vae_transform(resolution,crop_face=False):
         transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
                                             transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
     return transform
-    
+
+def get_face_image(face_model, image):
+    bboxes, kpss = face_model.det_model.detect(np.array(image)[:,:,::-1], max_num=1, metric='default')
+    if bboxes.shape[0] == 0:
+        return None
+    bbox = bboxes[0, 0:4]
+    return image.crop(bbox)
 
 
 class PersonalizedBase(Dataset):
@@ -203,6 +210,8 @@ class PersonalizedBase(Dataset):
     def prepare(self, autoencoder, clip_img_model, clip_text_model, caption_decoder, image_encoder):
         vae_trans = vae_transform(self.resolution,crop_face=self.crop_face)
         clip_trans = clip_transform(224,crop_face=self.crop_face)
+        face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        face_model.prepare(ctx_id=0, det_size=(512, 512))
         clip_image_processor = CLIPImageProcessor()
         self.empty_text = clip_text_model.encode('').to('cpu')
         for data_item in tqdm(self.data):
@@ -224,8 +233,11 @@ class PersonalizedBase(Dataset):
             # text_input_ids = clip_text_model.tokenizer.convert_tokens_to_ids(tokens)
             text = clip_text_model.encode(text)
             # text = caption_decoder.encode_prefix(text)
-
-            clip_image = clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
+            
+            face_image = get_face_image(face_model, pil_image)
+            if face_image is None:
+                face_image = pil_image
+            clip_image = clip_image_processor(images=face_image, return_tensors="pt").pixel_values
             image_embeds = image_encoder(clip_image.to('cuda')).image_embeds.detach().cpu()
             
             data_type = 0
