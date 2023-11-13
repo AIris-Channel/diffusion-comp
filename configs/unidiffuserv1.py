@@ -19,8 +19,8 @@ def get_config():
     config.gradient_accumulation_steps = 1
     config.log_interval = 10
     config.eval_interval = 1e100
-    config.save_interval = 100
-    config.save_best = True
+    config.save_interval = 1000
+    config.save_best = False
     config.max_step = 5000
 
     config.num_workers = 1

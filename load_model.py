@@ -1,21 +1,135 @@
 import torch
-import utils
-from absl import logging
 import os
 import json
-import wandb
 import libs.autoencoder
-import clip
 from libs.clip import FrozenCLIPEmbedder
 from libs.caption_decoder import CaptionDecoder
-from torch.utils.data import DataLoader
-from libs.schedule import stable_diffusion_beta_schedule, Schedule, LSimple_T2I
-import yaml
-import datetime
-from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
-from libs.lora import create_network
-from libs.discriminator import Discriminator
+from ip_adapter.ip_adapter import ImageProjModel
+from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
+from PIL import Image, ImageOps
+import einops
+from libs.dpm_solver_pp import NoiseScheduleVP, DPM_Solver
+from torchvision.utils import save_image
+
+
+def unpreprocess(v):
+        v = 0.5 * (v + 1.)
+        v.clamp_(0., 1.)
+        return v
+
+
+def stable_diffusion_beta_schedule(linear_start=0.00085, linear_end=0.0120, n_timestep=1000):
+    _betas = (
+        torch.linspace(linear_start ** 0.5, linear_end ** 0.5, n_timestep, dtype=torch.float64) ** 2
+    )
+    return _betas.numpy()
+
+
+def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, caption_decoder, device):
+    """
+    using_prompt: if use prompt as file name
+    """
+
+    n_iter = config.n_iter
+    _betas = stable_diffusion_beta_schedule()
+    text = torch.stack([text] * config.n_samples)
+    N = len(_betas)
+
+    empty_context = clip_text_model.encode([''])[0]
+
+    def split(x):
+        C, H, W = config.z_shape
+        z_dim = C * H * W
+        z, clip_img = x.split([z_dim, config.clip_img_dim], dim=1)
+        z = einops.rearrange(z, 'B (C H W) -> B C H W', C=C, H=H, W=W)
+        clip_img = einops.rearrange(clip_img, 'B (L D) -> B L D', L=1, D=config.clip_img_dim)
+        return z, clip_img
+
+
+    def combine(z, clip_img):
+        z = einops.rearrange(z, 'B C H W -> B (C H W)')
+        clip_img = einops.rearrange(clip_img, 'B L D -> B (L D)')
+        return torch.concat([z, clip_img], dim=-1)
+
+
+    def t2i_nnet(x, timesteps, text):  # text is the low dimension version of the text clip embedding
+        """
+        1. calculate the conditional model output
+        2. calculate unconditional model output
+            config.sample.t2i_cfg_mode == 'empty_token': using the original cfg with the empty string
+            config.sample.t2i_cfg_mode == 'true_uncond: using the unconditional model learned by our method
+        3. return linear combination of conditional output and unconditional output
+        """
+        z, clip_img = split(x)
+
+        t_text = torch.zeros(timesteps.size(0), dtype=torch.int, device=device)
+
+        z_out, clip_img_out, text_out = nnet(z, clip_img, text=text, t_img=timesteps, t_text=t_text,
+                                             data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+        x_out = combine(z_out, clip_img_out)
+
+        if config.sample.scale == 0.:
+            return x_out
+
+        if config.sample.t2i_cfg_mode == 'empty_token':
+            _empty_context = einops.repeat(empty_context, 'L D -> B L D', B=x.size(0))
+            _empty_context = caption_decoder.encode_prefix(_empty_context)
+            z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=_empty_context, t_img=timesteps, t_text=t_text,
+                                                                      data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+            x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
+        elif config.sample.t2i_cfg_mode == 'true_uncond':
+            text_N = torch.randn_like(text)  # 3 other possible choices
+            z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=text_N, t_img=timesteps, t_text=torch.ones_like(timesteps) * N,
+                                                                      data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+            x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
+        else:
+            raise NotImplementedError
+
+        return x_out + config.sample.scale * (x_out - x_out_uncond)
+
+
+    @torch.cuda.amp.autocast()
+    def decode(_batch):
+        return autoencoder.decode(_batch)
+
+
+    _n_samples = text.size(0)
+
+
+    def sample_fn(**kwargs):
+        _z_init = torch.randn(_n_samples, *config.z_shape, device=device)
+        _clip_img_init = torch.randn(_n_samples, 1, config.clip_img_dim, device=device)
+        _x_init = combine(_z_init, _clip_img_init)
+
+        noise_schedule = NoiseScheduleVP(schedule='discrete', betas=torch.tensor(_betas, device=device).float())
+
+        def model_fn(x, t_continuous):
+            t = t_continuous * N
+            return t2i_nnet(x, t, **kwargs)
+
+        dpm_solver = DPM_Solver(model_fn, noise_schedule, predict_x0=True, thresholding=False)
+        with torch.no_grad(), torch.autocast(device_type="cuda" if "cuda" in str(device) else "cpu"):
+            x = dpm_solver.sample(_x_init, steps=config.sample.sample_steps, eps=1. / N, T=1.)
+
+        _z, _clip_img = split(x)
+        return _z, _clip_img
+
+    samples = None    
+    for i in range(n_iter):
+        _z, _clip_img = sample_fn(text=text)  # conditioned on the text embedding
+        new_samples = unpreprocess(decode(_z))
+        if samples is None:
+            samples = new_samples
+        else:
+            samples = torch.vstack((samples, new_samples))
+
+    os.makedirs(config.output_path, exist_ok=True)
+    for idx, sample in enumerate(samples):
+        save_path = os.path.join(config.output_path, f'{prompt_index}-{idx:03}.jpg')
+        save_image(sample, save_path)
+        
+    print(f'results are saved in {save_path}')
 
 
 def process_one_json(json_data, image_output_path, context={}):
@@ -23,284 +137,39 @@ def process_one_json(json_data, image_output_path, context={}):
     given a json object, process the task the json describes
     write the json
     """
-    train_state = context['train_state']
+    nnet = context['nnet']
     autoencoder = context['autoencoder']
-    clip_img_model = context['clip_img_model']
     clip_text_model = context['clip_text_model']
     caption_decoder = context['caption_decoder']
+    clip_image_processor = context['clip_image_processor']
+    image_encoder = context['image_encoder']
+    image_proj_model = context['image_proj_model']
     config = context['config']
-    train_state.step = 0
-
-    """
-    处理数据部分
-    """
-    # process data
-    config = context['config']
-    data_name = str(json_data['id'])
-    class_word = json_data['class_word']
-    config.outdir = os.path.join('model_ouput', data_name)
-    now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-    config.workdir = os.path.join(
-        config.log_dir, f"{data_name}-{now}")
-    config.ckpt_root = os.path.join(config.workdir, 'ckpts')
-    config.meta_dir = os.path.join(config.workdir, "meta")
-    os.makedirs(config.workdir, exist_ok=True)
-    accelerator, device = utils.setup(config)
-
-    train_dataset = PersonalizedBase(
-        json_data['source_group'], resolution=512, class_word=class_word, crop_face=True, use_blip_caption=config.use_blip_caption)
-    train_dataset.prepare(autoencoder, clip_img_model,
-                          clip_text_model, caption_decoder)
-    
-    if config.train_text_encoder:
-        clip_text_model.to(device)
-    train_dataset_loader = DataLoader(train_dataset,
-                                      batch_size=config.batch_size,
-                                      num_workers=config.num_workers,
-                                      pin_memory=True,
-                                      drop_last=True
-                                      )
-
-    train_data_generator = utils.get_data_generator(
-        train_dataset_loader, enable_tqdm=accelerator.is_main_process, desc='train')
-
-    logging.info("saving meta data")
-    os.makedirs(config.meta_dir, exist_ok=True)
-    with open(os.path.join(config.meta_dir, "config.yaml"), "w") as f:
-        f.write(yaml.dump(config))
-        f.close()
-
-    _betas = stable_diffusion_beta_schedule()
-    schedule = Schedule(_betas)
-    logging.info(f'use {schedule}')
-
-    """
-    准备模型
-    """
-    nnet = train_state.nnet
-    nnet.to(device)
-    # prepare lorann
-    lorann = create_network(1.0, config.lora_dim, config.lora_alpha, autoencoder, clip_text_model, nnet, neuron_dropout=config.lora_dropout)
-    lorann.to(device)
-    lorann.apply_to(clip_text_model, nnet, config.train_text_encoder, config.train_nnet)
-    trainable_params = lorann.prepare_optimizer_params(
-        config.text_encoder_lr,config.nnet_lr,config.optimizer.lr
-    )
-    print(f"Training params: {utils.cnt_params(lorann)}")
-    optimizer = utils.get_optimizer(trainable_params, **config.optimizer)
-    lr_scheduler = utils.get_lr_scheduler(optimizer, **config.lr_scheduler)
-
-    if config.train_text_encoder and config.train_nnet:
-        nnet, clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
-            nnet, clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler
-        )
-    elif config.train_nnet:
-        nnet, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
-            nnet, lorann, optimizer, train_dataset_loader, lr_scheduler
-        )
-    elif config.train_text_encoder:
-        clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
-            clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler
-        )
-    else:
-        lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(lorann, optimizer, train_dataset_loader, lr_scheduler)
-
-    nnet.requires_grad_(False)
-    clip_text_model.requires_grad_(False)
-    nnet.eval()
-    clip_text_model.eval()
-    lorann.prepare_grad_etc(clip_text_model,nnet)
-    train_state.lorann = lorann
-    
-    if config.use_discriminator:
-        discriminator = Discriminator(config.data)
-        disc_loss = 0
-
-    def train_step():   
-        metrics = dict()
-        z, clip_img, text, data_type = next(train_data_generator)
-        z = z.to(device)
-        clip_img = clip_img.to(device)
-        text = text.to(device)
-        data_type = data_type.to(device)
-        
-        if config.use_discriminator:
-            global disc_loss
-            if train_state.step % config.disc_steps == 0:
-                disc_loss = discriminator.cal_disc(train_dataset.disc_prompt, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
-
-
-        with torch.cuda.amp.autocast():
-            loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
-                img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
-            loss = loss.mean()
-            if config.use_discriminator:
-                loss += disc_loss
-            accelerator.backward(loss.mean())
-        optimizer.step()
-        lr_scheduler.step()
-        train_state.ema_update(config.get('ema_rate', 0.9999))
-        train_state.step += 1
-        optimizer.zero_grad(set_to_none=True)
-        metrics['loss'] = accelerator.gather(
-            loss.detach().mean()).mean().item()
-        metrics['loss_img'] = accelerator.gather(
-            loss_img.detach().mean()).mean().item()
-        metrics['loss_clip_img'] = accelerator.gather(
-            loss_clip_img.detach().mean()).mean().item()
-        if config.use_discriminator:
-            metrics['disc_loss'] = disc_loss
-        # metrics['scale'] = accelerator.scaler.get_scale()
-        metrics['lr'] = train_state.optimizer.param_groups[0]['lr']
-        return metrics
-
-    @torch.no_grad()
-    @torch.autocast(device_type='cuda')
-    def eval(total_step):
-        """
-        write evaluation code here
-        """
-
-        from configs.sample_config import get_config
-        from sample import set_seed, sample
-        from score import Evaluator, score
-        set_seed(42)
-        eval_config = get_config()
-        
-        eval_config.n_samples = 4
-        eval_config.n_iter = 1
-        
-        autoencoder.to(device)
-        clip_text_model.to(device)  
-        
-        torch.cuda.empty_cache()
-         
-        # first sample
-        task_name = data_name
-        eval_config.output_path = os.path.join(image_output_path, task_name)
-
-        # 基于给定的prompt进行生成
-        images = []
-        prompts = json_data['caption_list']
-        for prompt_index, prompt in enumerate(prompts):
-            # 根据训练策略
-            prompt = prompt.replace(class_word, f'sks {class_word}')
-            eval_config.prompt = prompt
-            print("sampling with prompt:", prompt)
-            with torch.no_grad():
-                sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
-            images.append({
-                'prompt': prompt,
-                'paths': paths
-            })
-        gen_json = {
-            "id" : json_data["id"],
-            "images" : images
-        }
-        
-        # then score
-        ev = Evaluator()
-        bound_json = json.load(open(os.path.join('bound_json_outputs', f"{json_data['id']}.json")))
-        scores = score(ev, json_data, gen_json, bound_json, 'json_out')
-        with open(os.path.join(config.workdir, 'score.txt'), 'a') as f:
-            f.write(f'{total_step}\n')
-            for k, v in scores.items():
-                f.write(f'{k}: {v}\n')
-        
-    
-        # clip_text_model.to("cpu")
-        autoencoder.to("cpu")
-        
-        return scores
-        
-    def loop():
-        log_step = config.log_interval
-        eval_step = config.eval_interval
-        save_step = config.save_interval
-
-        best_score = float('-inf')
-        
-        while True:
-            lorann.train()
-            with accelerator.accumulate(lorann):
-                metrics = train_step()
-
-            if accelerator.is_main_process:
-                lorann.eval()
-                total_step = train_state.step * config.batch_size
-                if total_step >= eval_step and config.save_best:
-                    scores = eval(total_step)
-                    eval_step += config.eval_interval
-                    
-                    current_score = sum([
-                        scores['normed_face_ac_scores'] * config.edit_face_ratio +
-                        scores['normed_image_reward_ac_scores'] * config.edit_text_ratio
-                    ])
-                    
-                    if current_score > best_score:
-                        logging.info(f'saving best ckpts to {config.outdir}...')
-                        best_score = current_score
-                        train_state.save(os.path.join(
-                            config.outdir, 'final.ckpt'))
-                if total_step >= log_step:
-                    logging.info(utils.dct2str(
-                        dict(step=total_step, **metrics)))
-                    wandb.log(utils.add_prefix(
-                        metrics, 'train'), step=total_step)
-                    # if config.save_best:
-                    #     wandb.log(utils.add_prefix(
-                    #         scores, 'eval'), step=total_step)
-                    log_step += config.log_interval
-
-      
-
-                if total_step >= save_step:
-                    logging.info(f'Save and eval checkpoint {total_step}...')
-                    train_state.save(os.path.join(
-                        config.ckpt_root, f'{total_step:04}.ckpt'))
-                    save_step += config.save_interval
-
-            accelerator.wait_for_everyone()
-
-            if total_step >= config.max_step:
-                if not config.save_best:
-                    logging.info(f"saving final ckpts to {config.outdir}...")
-                    train_state.save(os.path.join(config.outdir, 'final.ckpt')) 
-                break
-        return train_state
-
-    train_state = loop()
-    nnet = train_state.nnet
-
-    """
-    生成图片
-    """
-    from configs.sample_config import get_config
-    from sample import set_seed, sample
-    set_seed(42)
-    eval_config = get_config()
-    
-    eval_config.n_samples = 4
-    eval_config.n_iter = 1
-    
-    autoencoder.to(device)
-    clip_text_model.to(device)
+    device = context['device']
     
     torch.cuda.empty_cache()
 
+    data_name = str(json_data['id'])
     output_folder = os.path.join(image_output_path, data_name)
-    eval_config.output_path = output_folder
+    config.output_path = output_folder
     os.makedirs(output_folder, exist_ok=True)
+
+    ref_images = [ImageOps.exif_transpose(Image.open(os.path.join('train_data', i['path']))).convert("RGB") for i in json_data['source_group']] 
+    ref_clip_images = clip_image_processor(images=ref_images, return_tensors="pt").pixel_values
+    image_embeds = image_encoder(ref_clip_images.to('cuda')).image_embeds
+    ip_tokens = image_proj_model(image_embeds)[0]
 
     images = []
 
     for prompt_index, prompt in enumerate(json_data['caption_list']):
-        # 根据训练策略
-        eval_config.prompt = prompt.replace(class_word, f'sks {class_word}')
         print("sampling with prompt:", prompt)
         with torch.no_grad():
-            sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
-        paths = [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(eval_config.n_samples)]
+            text = clip_text_model.encode(prompt).squeeze(0)
+            text = torch.cat([ip_tokens, text], dim=0).unsqueeze(0)
+            text = caption_decoder.encode_prefix(text).squeeze(0)
+            sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
+
+        paths = [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(config.n_samples)]
         
         images.append({
             'prompt': prompt,
@@ -322,32 +191,43 @@ def prepare_context():
     config = get_config()
     config.log_dir = 'logs'
     config.nnet_path = 'models/uvit_v1.pth'
+    config.n_samples = 4
+    config.n_iter = 1
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    train_state = utils.initialize_train_state(config, device, uvit_class=UViT)
-    logging.info(f'load nnet from {config.nnet_path}')
-    train_state.set_save_target_key(config.save_target_key)
-    train_state.nnet.load_state_dict(torch.load(
-        config.nnet_path, map_location='cpu'), False)
-    # train_state.nnet = train_state.nnet.half()
+    # init models
+    nnet = UViT(**config.nnet).eval()
+    print(f'load nnet from {config.nnet_path}')
+    nnet.load_state_dict(torch.load(config.nnet_path, map_location=device), False)
+    autoencoder = libs.autoencoder.get_model(**config.autoencoder)
+    clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device, max_length=77-config.image_proj_tokens)
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
+    clip_text_model.eval().to(device)
+    autoencoder.to(device)
+    nnet.to(device)
 
-    autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
-    # autoencoder = autoencoder.half()
+    clip_image_processor = CLIPImageProcessor()
+    image_encoder = CLIPVisionModelWithProjection.from_pretrained('image_encoder').eval().to(device)
 
-    clip_text_model = FrozenCLIPEmbedder(
-        version=config.clip_text_model, device=device)
-    clip_img_model, clip_img_model_preprocess = clip.load(
-        config.clip_img_model, jit=False)
-    clip_img_model.to(device).eval().requires_grad_(False)
+    # prepare ip-adapter
+    image_proj_model = ImageProjModel(
+        cross_attention_dim=768,
+        clip_embeddings_dim=1024,
+        clip_extra_context_tokens=config.image_proj_tokens,
+    ).eval()
+    image_proj_model.load_state_dict(torch.load('model_ouput/final.ckpt/image_proj_model.pth', map_location=device), False)
+    image_proj_model.to(device)
 
     return {
-        'train_state': train_state,
+        'nnet': nnet,
         'autoencoder': autoencoder,
-        'clip_img_model': clip_img_model,
         'clip_text_model': clip_text_model,
         'caption_decoder': caption_decoder,
-        'config': config
+        'clip_image_processor': clip_image_processor,
+        'image_encoder': image_encoder,
+        'image_proj_model': image_proj_model,
+        'config': config,
+        'device': device
     }
 
 
