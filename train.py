@@ -22,12 +22,11 @@ from libs.schedule import stable_diffusion_beta_schedule, Schedule, LSimple_T2I
 import argparse
 import yaml
 import datetime
-from pathlib import Path
+from transformers import CLIPVisionModelWithProjection
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
-from libs.lora import create_network
 from libs.discriminator import Discriminator
-# from score_utils import Evaluator
+from ip_adapter.ip_adapter import ImageProjModel
 
 
 def train(config):
@@ -59,19 +58,21 @@ def train(config):
     # autoencoder = autoencoder.half()
 
     clip_text_model = FrozenCLIPEmbedder(
-        version=config.clip_text_model, device=device)
+        version=config.clip_text_model, device=device, max_length=77-config.image_proj_tokens)
     clip_img_model, clip_img_model_preprocess = clip.load(
         config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
+
+    image_encoder = CLIPVisionModelWithProjection.from_pretrained('image_encoder').to(device).eval()
 
     """
     处理数据部分
     """
     # process data
     train_dataset = PersonalizedBase(
-        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True,use_blip_caption=config.use_blip_caption,train_text_encoder=config.train_text_encoder)
+        config.data_json, config.data_path, resolution=512, crop_face=True)
     train_dataset.prepare(autoencoder, clip_img_model,
-                          clip_text_model, caption_decoder)
+                          clip_text_model, caption_decoder, image_encoder)
 
     if config.train_text_encoder:
         clip_text_model.to(device)
@@ -95,38 +96,37 @@ def train(config):
     schedule = Schedule(_betas)
     logging.info(f'use {schedule}')
     
-    # prepare lorann
-    lorann = create_network(1.0, config.lora_dim, config.lora_alpha, autoencoder, clip_text_model, nnet, neuron_dropout=config.lora_dropout)
-    lorann.to(device)
-    lorann.apply_to(clip_text_model,nnet,config.train_text_encoder,config.train_nnet)
-    trainable_params = lorann.prepare_optimizer_params(
-        config.text_encoder_lr,config.nnet_lr,config.optimizer.lr
+    # prepare ip-adapter
+    image_proj_model = ImageProjModel(
+        cross_attention_dim=768,
+        clip_embeddings_dim=1024,
+        clip_extra_context_tokens=config.image_proj_tokens,
     )
-    print(f"Training params: {utils.cnt_params(lorann)}")
-    optimizer = utils.get_optimizer(trainable_params, **config.optimizer)
+    image_proj_model.to(device)
+    print(f"Training params: {utils.cnt_params(image_proj_model)}")
+    optimizer = utils.get_optimizer(image_proj_model.parameters(), **config.optimizer)
     
     if config.train_text_encoder and config.train_nnet:
-        nnet, clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
-            nnet, clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler
+        nnet, clip_text_model, image_proj_model, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
+            nnet, clip_text_model, image_proj_model, optimizer, train_dataset_loader, lr_scheduler
         )
     elif config.train_nnet:
-        nnet, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
-            nnet, lorann, optimizer, train_dataset_loader, lr_scheduler
+        nnet, image_proj_model, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
+            nnet, image_proj_model, optimizer, train_dataset_loader, lr_scheduler
         )
     elif config.train_text_encoder:
-        clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
-            clip_text_model, lorann, optimizer, train_dataset_loader, lr_scheduler
+        clip_text_model, image_proj_model, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(
+            clip_text_model, image_proj_model, optimizer, train_dataset_loader, lr_scheduler
         )
     else:
-        lorann, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(lorann, optimizer, train_dataset_loader, lr_scheduler)
+        image_proj_model, optimizer, train_dataset_loader, lr_scheduler = accelerator.prepare(image_proj_model, optimizer, train_dataset_loader, lr_scheduler)
         
     
     nnet.requires_grad_(False)
     clip_text_model.requires_grad_(False)
     nnet.eval()
     clip_text_model.eval()
-    lorann.prepare_grad_etc(clip_text_model,nnet)
-    train_state.lorann = lorann
+    train_state.image_proj_model = image_proj_model
     
     if config.use_discriminator:
         discriminator = Discriminator(config.data)
@@ -135,20 +135,24 @@ def train(config):
 
     def train_step():   
         metrics = dict()
-        z, clip_img, text, data_type = next(train_data_generator)
+        z, clip_img, text, image_embeds, data_type = next(train_data_generator)
         z = z.to(device)
         clip_img = clip_img.to(device)
         if config.train_text_encoder:
             text = clip_text_model.encode(text).to(device)
             text = caption_decoder.encode_prefix(text)
         text = text.to(device)
+        image_embeds = image_embeds.to(device)
         data_type = data_type.to(device)
+
+        ip_tokens = image_proj_model(image_embeds)
+        text = torch.cat([ip_tokens, text], dim=1).unsqueeze(0)
+        text = caption_decoder.encode_prefix(text).squeeze(0)
         
         if config.use_discriminator:
             global disc_loss
             if train_state.step % config.disc_steps == 0:
                 disc_loss = discriminator.cal_disc(train_dataset.disc_prompt, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
-
 
         with torch.cuda.amp.autocast():
             loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
@@ -237,18 +241,18 @@ def train(config):
         
     def loop():
         log_step = 0
-        eval_step = 0
+        eval_step = config.eval_interval
         save_step = config.save_interval
 
         best_score = float('-inf')
         
         while True:
-            lorann.train()
-            with accelerator.accumulate(lorann):
+            image_proj_model.train()
+            with accelerator.accumulate(image_proj_model):
                 metrics = train_step()
 
             if accelerator.is_main_process:
-                lorann.eval()
+                image_proj_model.eval()
                 total_step = train_state.step * config.batch_size
                 if total_step >= eval_step and config.save_best:
                     scores = eval(total_step)
@@ -272,9 +276,9 @@ def train(config):
                         dict(step=total_step, **metrics)))
                     wandb.log(utils.add_prefix(
                         metrics, 'train'), step=total_step)
-                    if config.save_best:
-                        wandb.log(utils.add_prefix(
-                            scores, 'eval'), step=total_step)
+                    # if config.save_best:
+                    #     wandb.log(utils.add_prefix(
+                    #         scores, 'eval'), step=total_step)
                     log_step += config.log_interval
 
       
@@ -299,10 +303,12 @@ def train(config):
 def get_args():
     parser = argparse.ArgumentParser()
     # key args
-    parser.add_argument('-d', '--data', type=str,
-                        default="train_data/boy1", help="datadir")
+    parser.add_argument('-d', '--data_json_file', type=str,
+                        default="train_data/data.json", help="Training data")
+    parser.add_argument('-r', '--data_root_path', type=str,
+                        default="train_data", help="Training data root path")
     parser.add_argument('-o', "--outdir", type=str,
-                        default="model_ouput/boy1", help="output of model")
+                        default="model_ouput", help="output of model")
 
     # args of logging
     parser.add_argument("--logdir", type=str, default="logs",
@@ -321,12 +327,12 @@ def main():
     args = get_args()
     config.log_dir = args.logdir
     config.outdir = args.outdir
-    config.data = args.data
-    data_name = Path(config.data).stem
+    config.data_json = args.data_json_file
+    config.data_path = args.data_root_path
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     config.workdir = os.path.join(
-        config.log_dir, f"{config_name}-{data_name}-{now}")
+        config.log_dir, f"{config_name}-{now}")
     config.ckpt_root = os.path.join(config.workdir, 'ckpts')
     config.meta_dir = os.path.join(config.workdir, "meta")
     config.nnet_path = args.nnet_path

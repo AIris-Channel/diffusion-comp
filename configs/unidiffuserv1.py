@@ -18,9 +18,9 @@ def get_config():
     config.data_type = 1
     config.gradient_accumulation_steps = 1
     config.log_interval = 10
-    config.eval_interval = 500
-    config.save_interval = 1e100
-    config.save_best = True
+    config.eval_interval = 1e100
+    config.save_interval = 1000
+    config.save_best = False
     config.max_step = 5000
 
     config.num_workers = 1
@@ -47,7 +47,7 @@ def get_config():
     config.edit_clip_ratio /= ratio_sum
     config.edit_text_clip_ratio /= ratio_sum
     
-    config.save_target_key = 'lorann'
+    config.save_target_key = 'image_proj_model'
 
     # config.optimizer = d(
     #     name='adamw',
@@ -125,5 +125,8 @@ def get_config():
     config.use_discriminator = False
     config.disc_steps = 30
     config.disc_loss_weight = 1e-2
+
+    # ip-adapter
+    config.image_proj_tokens = 4
     
     return config
