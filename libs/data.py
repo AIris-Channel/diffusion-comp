@@ -1,6 +1,7 @@
 from PIL import Image
 import io
 import torchvision.transforms as transforms
+from transformers import CLIPImageProcessor
 import numpy as np
 import os
 import PIL
@@ -178,7 +179,10 @@ class PersonalizedBase(Dataset):
                  data_root,
                  resolution,
                  mixing_prob=0.25,
-                 crop_face = False
+                 crop_face = False,
+                 t_drop_rate=0.05,
+                 i_drop_rate=0.05,
+                 ti_drop_rate=0.05
                 ):
 
         self.data_root = data_root
@@ -190,10 +194,17 @@ class PersonalizedBase(Dataset):
         
         self.resolution = resolution
         self.crop_face = crop_face
+
+        self.t_drop_rate = t_drop_rate
+        self.i_drop_rate = i_drop_rate
+        self.ti_drop_rate = ti_drop_rate
+
         
-    def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
+    def prepare(self, autoencoder, clip_img_model, clip_text_model, caption_decoder, image_encoder):
         vae_trans = vae_transform(self.resolution,crop_face=self.crop_face)
         clip_trans = clip_transform(224,crop_face=self.crop_face)
+        clip_image_processor = CLIPImageProcessor()
+        self.empty_text = clip_text_model.encode('').to('cpu')
         for data_item in tqdm(self.data):
             image_path = os.path.join(self.data_root, data_item['image_file'])
             if os.path.exists(image_path + '.pth'):
@@ -213,17 +224,22 @@ class PersonalizedBase(Dataset):
             # text_input_ids = clip_text_model.tokenizer.convert_tokens_to_ids(tokens)
             text = clip_text_model.encode(text)
             # text = caption_decoder.encode_prefix(text)
+
+            clip_image = clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
+            image_embeds = image_encoder(clip_image.to('cuda')).image_embeds.detach().cpu()
             
             data_type = 0
             z = z.to("cpu")
             clip_img = clip_img.to("cpu")
             text = text.to("cpu")
+            image_embeds = image_embeds.to("cpu")
 
             torch.save({
                 "z": z,
                 "text": text,
                 "clip_image": clip_img,
-                "data_type": data_type
+                "data_type": data_type,
+                "image_embeds": image_embeds
             }, image_path + '.pth')
         
         if torch.cuda.is_available():
@@ -245,6 +261,16 @@ class PersonalizedBase(Dataset):
         z = data_dict['z'].squeeze(0)
         clip_img = data_dict['clip_image'].squeeze(0)
         text = data_dict['text'].squeeze(0)
+        image_embeds = data_dict['image_embeds'].squeeze(0)
         data_type = data_dict['data_type']
+
+        rand_num = random.random()
+        if rand_num < self.i_drop_rate:
+            image_embeds = torch.zeros_like(image_embeds)
+        elif rand_num < (self.i_drop_rate + self.t_drop_rate):
+            text = self.empty_text.squeeze(0)
+        elif rand_num < (self.i_drop_rate + self.t_drop_rate + self.ti_drop_rate):
+            text = self.empty_text.squeeze(0)
+            image_embeds = torch.zeros_like(image_embeds, dtype=image_embeds.dtype)
         
-        return z, clip_img, text, data_type
+        return z, clip_img, text, image_embeds, data_type

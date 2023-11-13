@@ -18,12 +18,10 @@ def get_config():
     config.data_type = 1
     config.gradient_accumulation_steps = 1
     config.log_interval = 10
-    config.eval_interval = 500
-    config.save_interval = 1e100
+    config.eval_interval = 1e100
+    config.save_interval = 100
     config.save_best = True
-    config.num_train_epochs = 5
-    config.learning_rate = 1e-4
-    config.weight_decay = 1e-2
+    config.max_step = 5000
 
     config.num_workers = 1
     config.batch_size = 1
@@ -49,7 +47,7 @@ def get_config():
     config.edit_clip_ratio /= ratio_sum
     config.edit_text_clip_ratio /= ratio_sum
     
-    config.save_target_key = 'lorann'
+    config.save_target_key = 'image_proj_model'
 
     # config.optimizer = d(
     #     name='adamw',

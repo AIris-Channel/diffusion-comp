@@ -22,6 +22,7 @@ from libs.schedule import stable_diffusion_beta_schedule, Schedule, LSimple_T2I
 import argparse
 import yaml
 import datetime
+from transformers import CLIPVisionModelWithProjection
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
 from libs.discriminator import Discriminator
@@ -62,6 +63,8 @@ def train(config):
         config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
 
+    image_encoder = CLIPVisionModelWithProjection.from_pretrained('image_encoder').to(device).eval()
+
     """
     处理数据部分
     """
@@ -69,7 +72,7 @@ def train(config):
     train_dataset = PersonalizedBase(
         config.data_json, config.data_path, resolution=512, crop_face=True)
     train_dataset.prepare(autoencoder, clip_img_model,
-                          clip_text_model, caption_decoder)
+                          clip_text_model, caption_decoder, image_encoder)
 
     if config.train_text_encoder:
         clip_text_model.to(device)
@@ -96,7 +99,7 @@ def train(config):
     # prepare ip-adapter
     image_proj_model = ImageProjModel(
         cross_attention_dim=768,
-        clip_embeddings_dim=512,
+        clip_embeddings_dim=1024,
         clip_extra_context_tokens=config.image_proj_tokens,
     )
     image_proj_model.to(device)
@@ -132,14 +135,15 @@ def train(config):
 
     def train_step():   
         metrics = dict()
-        z, clip_img, text, data_type = next(train_data_generator)
+        z, clip_img, text, image_embeds, data_type = next(train_data_generator)
         z = z.to(device)
         clip_img = clip_img.to(device)
         text = text.to(device)
+        image_embeds = image_embeds.to(device)
         data_type = data_type.to(device)
 
-        ip_tokens = image_proj_model(clip_img)
-        text = torch.cat([text, ip_tokens], dim=1).unsqueeze(0)
+        ip_tokens = image_proj_model(image_embeds)
+        text = torch.cat([ip_tokens, text], dim=1).unsqueeze(0)
         text = caption_decoder.encode_prefix(text).squeeze(0)
         
         if config.use_discriminator:
@@ -234,7 +238,7 @@ def train(config):
         
     def loop():
         log_step = 0
-        eval_step = 0
+        eval_step = config.eval_interval
         save_step = config.save_interval
 
         best_score = float('-inf')
@@ -269,9 +273,9 @@ def train(config):
                         dict(step=total_step, **metrics)))
                     wandb.log(utils.add_prefix(
                         metrics, 'train'), step=total_step)
-                    if config.save_best:
-                        wandb.log(utils.add_prefix(
-                            scores, 'eval'), step=total_step)
+                    # if config.save_best:
+                    #     wandb.log(utils.add_prefix(
+                    #         scores, 'eval'), step=total_step)
                     log_step += config.log_interval
 
       
