@@ -2,11 +2,12 @@ from PIL import Image
 import io
 import torchvision.transforms as transforms
 import numpy as np
-import re
 import os
 import PIL
+import json
 from PIL import Image, ImageOps
 from torch.utils.data import Dataset
+from tqdm import tqdm
 import random
 import torch
 import gc
@@ -173,101 +174,58 @@ def vae_transform(resolution,crop_face=False):
 
 class PersonalizedBase(Dataset):
     def __init__(self,
+                 data_json_file,
                  data_root,
                  resolution,
-                 repeats=100,
-                 flip_p=0.5,
-                 set="train",
-                 class_word="dog",
-                 per_image_tokens=False,
                  mixing_prob=0.25,
-                 coarse_class_text=None,
-                 reg = False,
-                 crop_face = False,
-                 use_blip_caption = False,
-                 ti_token_string = None,
-                 ):
+                 crop_face = False
+                ):
 
         self.data_root = data_root
 
-        self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
+        self.data = json.load(open(data_json_file)) # list of dict: [{"image_file": "1.png", "text": "A dog"}]
 
-        self.num_images = len(self.image_paths)
-        self._length = self.num_images 
-
-        self.placeholder_token = class_word
         self.resolution = resolution
-        self.per_image_tokens = per_image_tokens
         self.mixing_prob = mixing_prob
         
         self.resolution = resolution
         self.crop_face = crop_face
-        self.use_blip_caption = use_blip_caption
-
-        self.coarse_class_text = coarse_class_text
-
-        if per_image_tokens:
-            assert self.num_images < len(per_img_token_list), f"Can't use per-image tokens when the training set contains more than {len(per_img_token_list)} tokens. To enable larger sets, add more tokens to 'per_img_token_list'."
-
-        if set == "train":
-            self._length = self.num_images * repeats
-
-        self.reg = reg
-        self.ti_token_string = ti_token_string
-        
-        self.disc_prompt = f"a photo of a sks {self.placeholder_token}"
         
     def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
-        self.datas = []
-        for i in range(self.num_images):
-            pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i])).convert("RGB")
+        vae_trans = vae_transform(self.resolution,crop_face=self.crop_face)
+        clip_trans = clip_transform(224,crop_face=self.crop_face)
+        for data_item in tqdm(self.data):
+            image_path = os.path.join(self.data_root, data_item['image_file'])
+            if os.path.exists(image_path + '.pth'):
+                continue
+            pil_image = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
+            text = data_item['text']
             
-            
-            placeholder_string = self.placeholder_token
-            if self.coarse_class_text:
-                placeholder_string = f"{self.coarse_class_text} {placeholder_string}"
-
-            if not self.reg:
-                text = random.choice(training_templates_smallest).format(placeholder_string)
-            else:
-                text = random.choice(reg_templates_smallest).format(placeholder_string)
-
-            # default to score-sde preprocessing
-            if self.use_blip_caption:
-                caption_text = open(re.sub(r'\.(jpe?g|png)$', '.txt', self.image_paths[i])).read().strip()
-                caption_text = caption_text.replace("boy","sks boy")
-                text = caption_text
-            
-            if self.ti_token_string is not None:
-                text = text +',' + self.ti_token_string
-            img = vae_transform(self.resolution,crop_face=self.crop_face)(pil_image)
-            img4clip = clip_transform(224,crop_face=self.crop_face)(pil_image)
+            img = vae_trans(pil_image)
+            img4clip = clip_trans(pil_image)
             
             img = img.to("cuda").unsqueeze(0)
             img4clip = img4clip.to("cuda").unsqueeze(0)
-            
-            
-  
+
             z = autoencoder.encode(img)
             clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
-            if self.ti_token_string is None:
-                text = clip_text_model.encode(text)
-                text = caption_decoder.encode_prefix(text)
+            # tokens = clip_text_model.tokenizer.tokenize(text)
+            # text_input_ids = clip_text_model.tokenizer.convert_tokens_to_ids(tokens)
+            text = clip_text_model.encode(text)
+            # text = caption_decoder.encode_prefix(text)
             
             data_type = 0
             z = z.to("cpu")
             clip_img = clip_img.to("cpu")
-            if self.ti_token_string is None:
-                text = text.to("cpu")
-            self.datas.append((z,clip_img,text,data_type))
-        # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
+            text = text.to("cpu")
+
+            torch.save({
+                "z": z,
+                "text": text,
+                "clip_image": clip_img,
+                "data_type": data_type
+            }, image_path + '.pth')
         
-        # if self.ti_token_string is None: # don't use text inversion method
-        #     clip_img_model = clip_img_model.to("cpu")
-        #     autoencoder = autoencoder.to("cpu")
-        #     clip_text_model = clip_text_model.to("cpu")
-        #     caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
-        #     del caption_decoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
@@ -275,19 +233,18 @@ class PersonalizedBase(Dataset):
         self.transform = None
         del self.transform
         
-        
 
     def __len__(self):
-        return self._length
+        return len(self.data)
 
     def __getitem__(self, i):
+        data_item = self.data[i]
+        image_path = os.path.join(self.data_root, data_item['image_file'])
+        data_dict = torch.load(image_path + '.pth')
 
-        z = self.datas[ i % self.num_images ][0].squeeze(0)
-        clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
-        if self.ti_token_string is None:
-            text = self.datas[ i % self.num_images ][2].squeeze(0)
-        else:
-            text = self.datas[ i % self.num_images ][2]
-        data_type = self.datas[ i % self.num_images ][3]
+        z = data_dict['z'].squeeze(0)
+        clip_img = data_dict['clip_image'].squeeze(0)
+        text = data_dict['text'].squeeze(0)
+        data_type = data_dict['data_type']
         
-        return z,clip_img,text,data_type
+        return z, clip_img, text, data_type

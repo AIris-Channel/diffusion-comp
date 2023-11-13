@@ -21,7 +21,9 @@ def get_config():
     config.eval_interval = 500
     config.save_interval = 1e100
     config.save_best = True
-    config.max_step = 5000
+    config.num_train_epochs = 5
+    config.learning_rate = 1e-4
+    config.weight_decay = 1e-2
 
     config.num_workers = 1
     config.batch_size = 1
@@ -125,5 +127,8 @@ def get_config():
     config.use_discriminator = False
     config.disc_steps = 30
     config.disc_loss_weight = 1e-2
+
+    # ip-adapter
+    config.image_proj_tokens = 4
     
     return config
