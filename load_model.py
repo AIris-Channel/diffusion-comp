@@ -235,7 +235,7 @@ def prepare_context():
         clip_embeddings_dim=1024,
         clip_extra_context_tokens=config.image_proj_tokens,
     ).eval()
-    image_proj_model.load_state_dict(torch.load('model_ouput/final.ckpt/image_proj_model.pth', map_location=device), False)
+    image_proj_model.load_state_dict(torch.load('model_output/final.ckpt/image_proj_model.pth', map_location=device), False)
     image_proj_model.to(device)
 
     face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])

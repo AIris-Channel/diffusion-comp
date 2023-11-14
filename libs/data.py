@@ -150,6 +150,7 @@ def clip_transform(n_px, crop_face=False):
     if crop_face:
         _crop_face = get_crop_face_func(crop_width=n_px, crop_height=n_px)
         return transforms.Compose([
+            transforms.Resize(n_px, interpolation=transforms.InterpolationMode.BICUBIC),
             _crop_face,
             _convert_image_to_rgb,
             transforms.ToTensor(),
@@ -166,7 +167,7 @@ def clip_transform(n_px, crop_face=False):
 def vae_transform(resolution,crop_face=False):
     if crop_face:
             _crop_face = get_crop_face_func(crop_width=resolution, crop_height=resolution)
-            transform = transforms.Compose([_crop_face, transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+            transform = transforms.Compose([transforms.Resize(resolution), _crop_face, transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
     else:
         transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
                                             transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
