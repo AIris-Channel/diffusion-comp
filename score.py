@@ -164,7 +164,7 @@ def score(ev, source_json, gen_json, bound_json, out_json_dir):
     
     
     # get ref images
-    ref_image_paths = [ i["path"] for i in source_json["source_group"]]
+    ref_image_paths = [os.path.join('train_data', i["path"]) for i in source_json["source_group"]]
     ref_face_embs = [ev.get_face_embedding(read_img_pil(i)) for i in ref_image_paths]
     ref_face_embs  = [emb for emb in ref_face_embs if emb is not None] # remove None
     ref_face_embs = torch.cat(ref_face_embs)

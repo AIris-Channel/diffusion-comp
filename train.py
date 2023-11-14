@@ -181,64 +181,75 @@ def train(config):
         """
         write evaluation code here
         """
-
-        from configs.sample_config import get_config
-        from sample import set_seed, sample
+        from transformers import CLIPImageProcessor
+        from score_utils.face_model import FaceAnalysis
+        from load_model import process_one_json
+        from score import Evaluator, score
         import json
-        set_seed(42)
-        eval_config = get_config()
-        
-        eval_config.n_samples = 3
-        eval_config.n_iter = 1
+
+        output_folder = 'outputs'
+        test_json_folder_path = 'train_data/json'
+        out_json_dir = 'scores_json'
+
+        config.n_samples = 4
+        config.n_iter = 1
         
         autoencoder.to(device)
-        clip_text_model.to(device)  
+        clip_text_model.to(device)
+
+        face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        face_model.prepare(ctx_id=0, det_size=(512, 512))
+
+        ev = Evaluator()
+
+        context = {
+            'nnet': nnet,
+            'autoencoder': autoencoder,
+            'clip_text_model': clip_text_model,
+            'caption_decoder': caption_decoder,
+            'clip_image_processor': CLIPImageProcessor(),
+            'image_encoder': image_encoder,
+            'image_proj_model': image_proj_model,
+            'face_model': face_model,
+            'config': config,
+            'device': device
+        }
+
+        result_scores = []
+        for json_file in os.listdir(test_json_folder_path):
+            if not json_file.endswith('.json'):
+                continue
+            with open(os.path.join(test_json_folder_path, json_file), 'r', encoding='utf-8') as f:
+                source_json = json.load(f)
+            gen_json = process_one_json(source_json, output_folder, context)
+            with open(os.path.join('bound_json_outputs', f"{source_json['id']}.json"), 'r', encoding='utf-8') as f:
+                bound_json = json.load(f)
+            os.makedirs(out_json_dir, exist_ok=True)
+            scores = score(ev, source_json, gen_json, bound_json, out_json_dir)
+            score_face = scores['normed_face_ac_scores'] / len(gen_json['images'])
+            score_image_reward = scores['normed_image_reward_ac_scores'] / len(gen_json['images'])
+            result_score = score_face * 2.5 + score_image_reward
+            result_scores.append((source_json['id'], result_score))
         
         torch.cuda.empty_cache()
-         
-        for data_name in ['boy1','boy2','girl1','girl2']:
-            if data_name in config.workdir:
-                    # first sample
-                    TASK = ['sim','edit']
-                    for task in TASK:
-                        task_name = f'{data_name}_{task}'
-                        eval_config.output_path = os.path.join('outputs', task_name)
-                        prompt_path = f'eval_prompts_advance/{task_name}.json'
-                
-                
-                        # 基于给定的prompt进行生成
-                        prompts = json.load(open(prompt_path, "r"))
-                        for prompt_index, prompt in enumerate(prompts):
-                            # 根据训练策略
-                            if "boy" in prompt:
-                                prompt = prompt.replace("boy", "sks boy")
-                            else:
-                                prompt = prompt.replace("girl", "sks girl")
 
-                            eval_config.prompt = prompt
-                            print("sampling with prompt:", prompt)
-                            with torch.no_grad():
-                                sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
-                    break
-        
-        
         # then score
-        from score import score_one_task
-        scores = score_one_task('./train_data/', './eval_prompts_advance/', './outputs/', data_name)
         with open(os.path.join(config.workdir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
-            for k, v in scores.items():
+            for k, v in result_scores:
                 f.write(f'{k}: {v}\n')
+            average_score = sum([v for _, v in result_scores]) / len(result_scores)
+            f.write(f'average: {average_score}')
         
     
-        # clip_text_model.to("cpu")
+        clip_text_model.to("cpu")
         autoencoder.to("cpu")
         
-        return scores
+        return average_score
         
     def loop():
         log_step = 0
-        eval_step = config.eval_interval
+        eval_step = 0
         save_step = config.save_interval
 
         best_score = float('-inf')
@@ -252,30 +263,22 @@ def train(config):
                 image_proj_model.eval()
                 total_step = train_state.step * config.batch_size
                 if total_step >= eval_step and config.save_best:
-                    scores = eval(total_step)
+                    current_score = eval(total_step)
                     eval_step += config.eval_interval
-                    
-                    current_score = sum([
-                        scores['sim_face'] * config.sim_face_ratio +
-                        scores['sim_clip'] * config.sim_clip_ratio +
-                        scores['edit_face'] * config.edit_face_ratio +
-                        scores['edit_clip'] * config.edit_clip_ratio +
-                        scores['edit_text_clip'] * config.edit_text_clip_ratio
-                    ])
-                    
+
                     if current_score > best_score:
                         logging.info(f'saving best ckpts to {config.outdir}...')
                         best_score = current_score
                         train_state.save(os.path.join(
                             config.outdir, 'final.ckpt'))
+
                 if total_step >= log_step:
                     logging.info(utils.dct2str(
                         dict(step=total_step, **metrics)))
                     wandb.log(utils.add_prefix(
                         metrics, 'train'), step=total_step)
-                    # if config.save_best:
-                    #     wandb.log(utils.add_prefix(
-                    #         scores, 'eval'), step=total_step)
+                    if config.save_best:
+                        wandb.log({'average_score': current_score}, step=total_step)
                     log_step += config.log_interval
 
       

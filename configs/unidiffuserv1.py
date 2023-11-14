@@ -18,13 +18,13 @@ def get_config():
     config.data_type = 1
     config.gradient_accumulation_steps = 1
     config.log_interval = 10
-    config.eval_interval = 1e100
+    config.eval_interval = 1000
     config.save_interval = 1000
-    config.save_best = False
+    config.save_best = True
     config.max_step = 5000
 
     config.num_workers = 1
-    config.batch_size = 1
+    config.batch_size = 2
     config.resolution = 512
 
     config.clip_img_model = "ViT-B/32"
@@ -33,19 +33,6 @@ def get_config():
     config.only_load_model = True
 
     config.use_blip_caption = False
-    config.sim_face_ratio = 7.0
-    config.sim_clip_ratio = 3.0
-    config.edit_face_ratio = 7.0
-    config.edit_clip_ratio = 3.0
-    config.edit_text_clip_ratio = 6.0
-    
-    # average the ratio
-    ratio_sum = config.sim_face_ratio + config.sim_clip_ratio + config.edit_face_ratio + config.edit_clip_ratio + config.edit_text_clip_ratio
-    config.sim_face_ratio /= ratio_sum
-    config.sim_clip_ratio /= ratio_sum
-    config.edit_face_ratio /= ratio_sum
-    config.edit_clip_ratio /= ratio_sum
-    config.edit_text_clip_ratio /= ratio_sum
     
     config.save_target_key = 'image_proj_model'
 
@@ -97,8 +84,8 @@ def get_config():
 
     # sample
     config.mode = "t2i"
-    config.n_samples = 2
-    config.n_iter = 6
+    config.n_samples = 4
+    config.n_iter = 1
     config.nrow = 4
     config.sample = d(
         sample_steps=30,

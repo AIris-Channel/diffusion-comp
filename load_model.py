@@ -11,6 +11,8 @@ from PIL import Image, ImageOps
 import einops
 from libs.dpm_solver_pp import NoiseScheduleVP, DPM_Solver
 from torchvision.utils import save_image
+import numpy as np
+from score_utils.face_model import FaceAnalysis
 
 
 def unpreprocess(v):
@@ -132,6 +134,21 @@ def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, capti
     print(f'results are saved in {save_path}')
 
 
+def get_face_image(face_model, image):
+    bboxes, kpss = face_model.det_model.detect(np.array(image)[:,:,::-1], max_num=1, metric='default')
+    if bboxes.shape[0] == 0:
+        return None
+    best_bbox = bboxes[0, 0:4]
+    best_score = bboxes[0, 4]
+    for i in range(1, bboxes.shape[0]):
+        bbox = bboxes[i, 0:4]
+        det_score = bboxes[i, 4]
+        if det_score > best_score:
+            best_bbox = bbox
+            best_score = det_score
+    return image.crop(best_bbox), best_score
+
+
 def process_one_json(json_data, image_output_path, context={}):
     """
     given a json object, process the task the json describes
@@ -144,6 +161,7 @@ def process_one_json(json_data, image_output_path, context={}):
     clip_image_processor = context['clip_image_processor']
     image_encoder = context['image_encoder']
     image_proj_model = context['image_proj_model']
+    face_model = context['face_model']
     config = context['config']
     device = context['device']
     
@@ -154,10 +172,12 @@ def process_one_json(json_data, image_output_path, context={}):
     config.output_path = output_folder
     os.makedirs(output_folder, exist_ok=True)
 
-    ref_images = [ImageOps.exif_transpose(Image.open(os.path.join('train_data', i['path']))).convert("RGB") for i in json_data['source_group']] 
-    ref_clip_images = clip_image_processor(images=ref_images, return_tensors="pt").pixel_values
-    image_embeds = image_encoder(ref_clip_images.to('cuda')).image_embeds
-    ip_tokens = image_proj_model(image_embeds)[0]
+    ref_images = [ImageOps.exif_transpose(Image.open(os.path.join('train_data', i['path']))).convert("RGB") for i in json_data['source_group']]
+    ref_faces = [get_face_image(face_model, i) for i in ref_images]
+    ref_face = max(ref_faces, key=lambda x: x[1])[0]
+    ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
+    image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
+    ip_tokens = image_proj_model(image_embeds).squeeze(0)
 
     images = []
 
@@ -218,6 +238,9 @@ def prepare_context():
     image_proj_model.load_state_dict(torch.load('model_ouput/final.ckpt/image_proj_model.pth', map_location=device), False)
     image_proj_model.to(device)
 
+    face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+    face_model.prepare(ctx_id=0, det_size=(512, 512))
+
     return {
         'nnet': nnet,
         'autoencoder': autoencoder,
@@ -226,6 +249,7 @@ def prepare_context():
         'clip_image_processor': clip_image_processor,
         'image_encoder': image_encoder,
         'image_proj_model': image_proj_model,
+        'face_model': face_model,
         'config': config,
         'device': device
     }
@@ -238,4 +262,6 @@ if __name__ == "__main__":
             continue
         with open(f'train_data/json/{json_file}', 'r', encoding='utf-8') as f:
             json_data = json.load(f)
-        process_one_json(json_data, 'outputs', context)
+        gen_json = process_one_json(json_data, 'outputs', context)
+        with open(f"outputs/{json_data['id']}.json", 'w', encoding='utf-8') as f:
+            json.dump(gen_json, f)
