@@ -98,7 +98,7 @@ def train(config):
     
     # prepare ip-adapter
     image_proj_model = ImageProjModel(
-        cross_attention_dim=768,
+        cross_attention_dim=64,
         clip_embeddings_dim=1024,
         clip_extra_context_tokens=config.image_proj_tokens,
     )
@@ -142,9 +142,10 @@ def train(config):
         image_embeds = image_embeds.to(device)
         data_type = data_type.to(device)
 
-        ip_tokens = image_proj_model(image_embeds)
-        text = torch.cat([ip_tokens, text], dim=1).unsqueeze(0)
-        text = caption_decoder.encode_prefix(text).squeeze(0)
+        ip_tokens = image_proj_model(image_embeds).squeeze(0)
+        # text = caption_decoder.encode_prefix(text).squeeze(0)
+        text = torch.cat([ip_tokens, text], dim=1)
+        
         
         if config.use_discriminator:
             global disc_loss

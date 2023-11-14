@@ -184,9 +184,9 @@ def process_one_json(json_data, image_output_path, context={}):
     for prompt_index, prompt in enumerate(json_data['caption_list']):
         print("sampling with prompt:", prompt)
         with torch.no_grad():
-            text = clip_text_model.encode(prompt).squeeze(0)
-            text = torch.cat([ip_tokens, text], dim=0).unsqueeze(0)
+            text = clip_text_model.encode(prompt)
             text = caption_decoder.encode_prefix(text).squeeze(0)
+            text = torch.cat([ip_tokens, text], dim=0)
             sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
 
         paths = [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(config.n_samples)]
@@ -231,7 +231,7 @@ def prepare_context():
 
     # prepare ip-adapter
     image_proj_model = ImageProjModel(
-        cross_attention_dim=768,
+        cross_attention_dim=64,
         clip_embeddings_dim=1024,
         clip_extra_context_tokens=config.image_proj_tokens,
     ).eval()

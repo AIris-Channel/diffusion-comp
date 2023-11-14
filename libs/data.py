@@ -220,7 +220,7 @@ class PersonalizedBase(Dataset):
         face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         face_model.prepare(ctx_id=0, det_size=(512, 512))
         clip_image_processor = CLIPImageProcessor()
-        self.empty_text = clip_text_model.encode('').to('cpu')
+        self.empty_text = caption_decoder.encode_prefix(clip_text_model.encode('')).to('cpu')
         for data_item in tqdm(self.data):
             image_path = os.path.join(self.data_root, data_item['image_file'])
             if os.path.exists(image_path + '.pth'):
@@ -239,7 +239,7 @@ class PersonalizedBase(Dataset):
             # tokens = clip_text_model.tokenizer.tokenize(text)
             # text_input_ids = clip_text_model.tokenizer.convert_tokens_to_ids(tokens)
             text = clip_text_model.encode(text)
-            # text = caption_decoder.encode_prefix(text)
+            text = caption_decoder.encode_prefix(text)
             
             face_image = get_face_image(face_model, pil_image)
             if face_image is None:
