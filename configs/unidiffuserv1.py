@@ -49,17 +49,17 @@ def get_config():
     
     config.save_target_key = 'image_proj_model'
 
-    # config.optimizer = d(
-    #     name='adamw',
-    #     lr=1e-5,
-    #     weight_decay=0.03,
-    #     betas=(0.9, 0.9),
-    #     amsgrad=False
-    # )
     config.optimizer = d(
-        name = 'lion',
-        lr = 2e-5,
+        name='adamw',
+        lr=1e-5,
+        weight_decay=0.03,
+        betas=(0.9, 0.9),
+        amsgrad=False
     )
+    # config.optimizer = d(
+    #     name = 'lion',
+    #     lr = 2e-5,
+    # )
 
     config.lr_scheduler = d(
         name='customized',

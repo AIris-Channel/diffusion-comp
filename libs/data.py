@@ -225,10 +225,9 @@ class PersonalizedBase(Dataset):
             img4clip = clip_trans(pil_image)
             
             img = img.to("cuda").unsqueeze(0)
-            img_flip = img_flip.to("cuda").unsqueeze(0)
             img4clip = img4clip.to("cuda").unsqueeze(0)
+
             z = autoencoder.encode(img)
-            z_flip = autoencoder.encode(img_flip)
             clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
             # tokens = clip_text_model.tokenizer.tokenize(text)
             # text_input_ids = clip_text_model.tokenizer.convert_tokens_to_ids(tokens)
@@ -243,7 +242,6 @@ class PersonalizedBase(Dataset):
             
             data_type = 0
             z = z.to("cpu")
-            z_flip = z_flip.to("cpu")
             clip_img = clip_img.to("cpu")
             text = text.to("cpu")
             image_embeds = image_embeds.to("cpu")

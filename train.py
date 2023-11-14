@@ -138,9 +138,6 @@ def train(config):
         z, clip_img, text, image_embeds, data_type = next(train_data_generator)
         z = z.to(device)
         clip_img = clip_img.to(device)
-        if config.train_text_encoder:
-            text = clip_text_model.encode(text).to(device)
-            text = caption_decoder.encode_prefix(text)
         text = text.to(device)
         image_embeds = image_embeds.to(device)
         data_type = data_type.to(device)
@@ -308,7 +305,7 @@ def get_args():
     parser.add_argument('-r', '--data_root_path', type=str,
                         default="train_data", help="Training data root path")
     parser.add_argument('-o', "--outdir", type=str,
-                        default="model_ouput", help="output of model")
+                        default="model_output", help="output of model")
 
     # args of logging
     parser.add_argument("--logdir", type=str, default="logs",
