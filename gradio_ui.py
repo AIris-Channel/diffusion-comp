@@ -1,32 +1,29 @@
 import gradio as gr
 import torch
 from PIL import Image
-from configs.sample_config import get_config
+from configs.unidiffuserv1 import get_config
 from sample import set_seed, stable_diffusion_beta_schedule
 import libs.autoencoder
 from libs.clip import FrozenCLIPEmbedder
 from libs.uvit_multi_post_ln_v1 import UViT
 from libs.caption_decoder import CaptionDecoder
 from libs.dpm_solver_pp import NoiseScheduleVP, DPM_Solver
+from ip_adapter.ip_adapter import ImageProjModel
+from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
+from score_utils.face_model import FaceAnalysis
 from score import Evaluator
 import numpy as np
 import time
 import einops
 import glob, os
-from libs.lora import create_network_from_weights
+from load_model import get_face_image
 
 def load_model(model_path):
-    global device, nnet, autoencoder, clip_text_model
-    network,weights = create_network_from_weights(1.0,model_path,autoencoder,clip_text_model,nnet,for_inference=True)
-    network.apply_to(clip_text_model,nnet)
-    info = network.load_state_dict(weights,False)
-    print(f"LoRA weights are loaded: {info}")
-    network.to(device)
+    global image_proj_model, device
+    image_proj_model.load_state_dict(torch.load(model_path, map_location=device), False)
+    image_proj_model.to(device)
 
-def sample_single(prompt, config, nnet, clip_text_model, autoencoder, caption_decoder, device):
-    print(f"Generating for text: {prompt}")
-    prompt = clip_text_model.encode(prompt)
-    prompt = caption_decoder.encode_prefix(prompt)
+def sample_single(text, config, nnet, autoencoder, device):
 
     _betas = stable_diffusion_beta_schedule()
     N = len(_betas)
@@ -83,7 +80,7 @@ def sample_single(prompt, config, nnet, clip_text_model, autoencoder, caption_de
 
         return x_out + config.sample.scale * (x_out - x_out_uncond)
 
-    _n_samples = prompt.size(0)
+    _n_samples = text.size(0)
 
 
     def sample_fn(device, **kwargs):
@@ -107,7 +104,7 @@ def sample_single(prompt, config, nnet, clip_text_model, autoencoder, caption_de
         _z, _clip_img = split(x)
         return _z, _clip_img
 
-    z, clip_img = sample_fn(device=device, text=prompt)
+    z, clip_img = sample_fn(device=device, text=text)
 
     def unpreprocess(v):
         v = 0.5 * (v + 1.)
@@ -120,35 +117,46 @@ def sample_single(prompt, config, nnet, clip_text_model, autoencoder, caption_de
 
     return (unpreprocess(decode(z))[0]*255).cpu().numpy().astype(np.uint8).transpose(1, 2, 0)
 
-def score_task(image, prompt, dataset_folder):
-    eval = Evaluator()
-    # get face, and ref image from dataset folder
-    refs1 = glob.glob(os.path.join(dataset_folder, "*.jpg"))
-    refs2 = glob.glob(os.path.join(dataset_folder, "*.jpeg"))
-    refs = refs1 + refs2
-    refs_images = [Image.open(ref) for ref in refs]
+def score_task(prompt, image, _image, ref_image):
+    image = Image.fromarray(image)
+    _image = Image.fromarray(_image)
+    ref_image = Image.fromarray(ref_image)
 
-    refs_clip = [eval.get_img_embedding(i) for i in refs_images]
-    refs_clip = torch.cat(refs_clip)
-    # print(refs_clip.shape)
+    ev = Evaluator()
 
-    refs_embs = [eval.get_face_embedding(i) for i in refs_images]
-    refs_embs = [emb for emb in refs_embs if emb is not None]
-    refs_embs = torch.cat(refs_embs)
+    ref_face_emb = ev.get_face_embedding(ref_image)
+    image_face_emb = ev.get_face_embedding(image)
+    _image_face_emb = ev.get_face_embedding(_image)
+    face_score = (image_face_emb @ ref_face_emb.T).mean().item()
+    face_max = (ref_face_emb @ ref_face_emb.T).mean().item()
+    face_min = (_image_face_emb @ ref_face_emb.T).mean().item()
+    face_score = (face_score - face_min) / (face_max - face_min)
 
-    sample = Image.fromarray(image)
-    # sample vs ref
-    score_face = eval.sim_face_emb(sample, refs_embs)
-    score_clip = eval.sim_clip_imgembs(sample, refs_clip)
-    # sample vs prompt
-    score_text = eval.sim_clip_text(sample, prompt)
-    return score_face, score_clip, score_text
+    image_reward_max = ev.image_reward.score(prompt, _image)
+    image_reward_min = ev.image_reward.score(prompt, ref_image)
+    image_reward_score = ev.image_reward.score(prompt, image)
+    image_reward_score = (image_reward_score - image_reward_min) / (image_reward_max - image_reward_min)
 
-def sample_and_score(prompt, dataset_folder):
-    global device, nnet, autoencoder, clip_text_model, caption_decoder, eval_config
+    return face_score, image_reward_score
+
+def sample_and_score(prompt, ref_image):
+    global device, nnet, autoencoder, clip_text_model, _clip_text_model, caption_decoder, clip_image_processor, image_encoder, image_proj_model, face_model, eval_config
     with torch.no_grad():
-        image = sample_single(prompt, eval_config, nnet, clip_text_model, autoencoder, caption_decoder, device)
-        score1, score2, score3 = score_task(image, prompt, f'train_data/{dataset_folder}')
+        ref_face, _ = get_face_image(face_model, ref_image)
+        ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
+        image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
+        ip_tokens = image_proj_model(image_embeds).squeeze(0)
+        text = clip_text_model.encode(prompt)
+        text = caption_decoder.encode_prefix(text).squeeze(0)
+        text = torch.cat([ip_tokens, text], dim=0)
+        image = sample_single(text, eval_config, nnet, autoencoder, device)
+
+        _text = _clip_text_model.encode(prompt)
+        _text = caption_decoder.encode_prefix(_text).squeeze(0)
+        _image = sample_single(_text, eval_config, nnet, autoencoder, device)
+
+        score1, score2 = score_task(prompt, image, _image, ref_image)
+        score3 = score1 * 2.5 + score2
         return image, score1, score2, score3
 
 if __name__=='__main__':
@@ -156,25 +164,38 @@ if __name__=='__main__':
     set_seed(42)
     eval_config = get_config()
     autoencoder = libs.autoencoder.get_model(**eval_config.autoencoder).to(device)
-    clip_text_model = FrozenCLIPEmbedder(version=eval_config.clip_text_model, device=device)
+    clip_text_model = FrozenCLIPEmbedder(version=eval_config.clip_text_model, device=device, max_length=77-eval_config.image_proj_tokens)
+    _clip_text_model =  FrozenCLIPEmbedder(version=eval_config.clip_text_model, device=device)
     caption_decoder = CaptionDecoder(device=device, **eval_config.caption_decoder)
     nnet = UViT(**eval_config.nnet).to(device)
     nnet_default_path = './models/uvit_v1.pth'
     nnet.load_state_dict(torch.load(nnet_default_path, map_location=device), False)
+
+    clip_image_processor = CLIPImageProcessor()
+    image_encoder = CLIPVisionModelWithProjection.from_pretrained('image_encoder').eval().to(device)
+    image_proj_model = ImageProjModel(
+        cross_attention_dim=64,
+        clip_embeddings_dim=1024,
+        clip_extra_context_tokens=eval_config.image_proj_tokens,
+    ).eval()
+
+    face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+    face_model.prepare(ctx_id=0, det_size=(512, 512))
+
     with gr.Blocks() as app:
         with gr.Row():
             with gr.Column():
                 model_path = gr.Textbox(lines=1, label="Model Path")
                 confirm = gr.Button("Change Model")
                 confirm.click(load_model, model_path)
-                dataset_folder = gr.Dropdown(["boy1", "boy2", "girl1", "girl2"], label="Dataset Folder")
+                ref_image = gr.Image(label="Reference Image", type="numpy")
                 score1 = gr.Number(0, label="Face Score")
-                score2 = gr.Number(0, label="Clip Image Score")
-                score3 = gr.Number(0, label="Clip Text Score")
+                score2 = gr.Number(0, label="Image Reward Score")
+                score3 = gr.Number(0, label="Total Score")
             with gr.Column():
                 prompt = gr.Textbox(lines=1, label="Prompt")
                 generate = gr.Button("Generate")
                 image = gr.Image(label="Output Image", type="numpy")
-                generate.click(sample_and_score, [prompt, dataset_folder], [image, score1, score2, score3])
+                generate.click(sample_and_score, [prompt, ref_image], [image, score1, score2, score3])
 
     app.launch(share=True)
