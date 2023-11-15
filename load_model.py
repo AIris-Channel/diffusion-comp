@@ -159,8 +159,8 @@ def process_one_json(json_data, image_output_path, context={}):
     clip_text_model = context['clip_text_model']
     caption_decoder = context['caption_decoder']
     clip_image_processor = context['clip_image_processor']
-    # image_encoder = context['image_encoder']
-    # image_proj_model = context['image_proj_model']
+    image_encoder = context['image_encoder']
+    image_proj_model = context['image_proj_model']
     face_model = context['face_model']
     config = context['config']
     device = context['device']
@@ -172,12 +172,12 @@ def process_one_json(json_data, image_output_path, context={}):
     config.output_path = output_folder
     os.makedirs(output_folder, exist_ok=True)
 
-    # ref_images = [ImageOps.exif_transpose(Image.open(os.path.join('train_data', i['path']))).convert("RGB") for i in json_data['source_group']]
-    # ref_faces = [get_face_image(face_model, i) for i in ref_images]
-    # ref_face = max(ref_faces, key=lambda x: x[1])[0]
-    # ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
-    # image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
-    # ip_tokens = image_proj_model(image_embeds).squeeze(0)
+    ref_images = [ImageOps.exif_transpose(Image.open(os.path.join('train_data', i['path']))).convert("RGB") for i in json_data['source_group']]
+    ref_faces = [get_face_image(face_model, i) for i in ref_images]
+    ref_face = max(ref_faces, key=lambda x: x[1])[0]
+    ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
+    image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
+    ip_tokens = image_proj_model(image_embeds).squeeze(0)
 
     images = []
 
@@ -186,7 +186,7 @@ def process_one_json(json_data, image_output_path, context={}):
         with torch.no_grad():
             text = clip_text_model.encode(prompt)
             text = caption_decoder.encode_prefix(text).squeeze(0)
-            # text = torch.cat([ip_tokens, text], dim=0)
+            text = torch.cat([text, ip_tokens], dim=0)
             sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
 
         paths = [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(config.n_samples)]
@@ -231,8 +231,8 @@ def prepare_context():
 
     # prepare ip-adapter
     image_proj_model = ImageProjModel(
-        cross_attention_dim=64,
-        clip_embeddings_dim=1024,
+        cross_attention_dim=config.ip_cross_attention_dim,
+        clip_embeddings_dim=config.ip_clip_embeddings_dim,
         clip_extra_context_tokens=config.image_proj_tokens,
     ).eval()
     image_proj_model.load_state_dict(torch.load('model_output/final.ckpt/image_proj_model.pth', map_location=device), False)

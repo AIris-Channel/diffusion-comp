@@ -26,6 +26,7 @@ import datetime
 from utils import get_optimizer, get_lr_scheduler
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
+from ip_adapter.ip_adapter import ImageProjModel
 
 
 def train(config):
@@ -45,18 +46,13 @@ def train(config):
     # train_state.nnet = train_state.nnet.half()
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
 
-    optimizer = get_optimizer(nnet.parameters(), **config.optimizer)
-    lr_scheduler = get_lr_scheduler(optimizer, **config.lr_scheduler)
-    nnet, optimizer = accelerator.prepare(
-        nnet, optimizer)
-
-    nnet.to(device)
+    nnet.to(device).eval().requires_grad_(False)
 
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
     # autoencoder = autoencoder.half()
 
     clip_text_model = FrozenCLIPEmbedder(
-        version=config.clip_text_model, device=device)
+        version=config.clip_text_model, device=device, max_length=77-config.image_proj_tokens)
     clip_img_model, clip_img_model_preprocess = clip.load(
         config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
@@ -91,6 +87,20 @@ def train(config):
     schedule = Schedule(_betas)
     logging.info(f'use {schedule}')
 
+    # prepare ip-adapter
+    image_proj_model = ImageProjModel(
+        cross_attention_dim=config.ip_cross_attention_dim,
+        clip_embeddings_dim=config.ip_clip_embeddings_dim,
+        clip_extra_context_tokens=config.image_proj_tokens,
+    )
+    image_proj_model.to(device)
+    print(f"Training params: {utils.cnt_params(image_proj_model)}")
+
+    optimizer = get_optimizer(image_proj_model.parameters(), **config.optimizer)
+    lr_scheduler = get_lr_scheduler(optimizer, **config.lr_scheduler)
+    image_proj_model, optimizer = accelerator.prepare(
+        image_proj_model, optimizer)
+
     config.step = 0
 
     def train_step():
@@ -99,7 +109,12 @@ def train(config):
         z = z.to(device)
         clip_img = clip_img.to(device)
         text = text.to(device)
+        image_embeds = image_embeds.to(device)
         data_type = data_type.to(device)
+        
+        # image projection
+        ip_tokens = image_proj_model(image_embeds).squeeze(0)
+        text = torch.cat([text, ip_tokens], dim=1)
 
         with torch.cuda.amp.autocast():
             loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
@@ -152,8 +167,8 @@ def train(config):
             'clip_text_model': clip_text_model,
             'caption_decoder': caption_decoder,
             'clip_image_processor': CLIPImageProcessor(),
-            # 'image_encoder': image_encoder,
-            # 'image_proj_model': image_proj_model,
+            'image_encoder': image_encoder,
+            'image_proj_model': image_proj_model,
             'face_model': face_model,
             'config': config,
             'device': device
@@ -191,8 +206,7 @@ def train(config):
                 'total': total_score
             }
             f.write(f'total: {score_dict}')
-        
-    
+
         clip_text_model.to("cpu")
         autoencoder.to("cpu")
         
@@ -206,12 +220,12 @@ def train(config):
         best_score = float('-inf')
         
         while True:
-            nnet.train()
-            with accelerator.accumulate(nnet):
+            image_proj_model.train()
+            with accelerator.accumulate(image_proj_model):
                 metrics = train_step()
 
             if accelerator.is_main_process:
-                nnet.eval()
+                image_proj_model.eval()
                 total_step = config.step * config.batch_size
                 if total_step >= eval_step:
                     scores = eval(total_step)
@@ -222,8 +236,9 @@ def train(config):
                     if current_score > best_score:
                         logging.info(f'saving best ckpts to {config.outdir}...')
                         best_score = current_score
-                        torch.save(nnet.state_dict(), os.path.join(
-                            config.outdir, 'final.ckpt'))
+                        os.makedirs(os.path.join(config.outdir, 'final.ckpt'), exist_ok=True)
+                        torch.save(image_proj_model.state_dict(), os.path.join(
+                            config.outdir, 'final.ckpt', 'image_proj_model.pth'))
                 if total_step >= log_step:
                     logging.info(utils.dct2str(
                         dict(step=total_step, **metrics)))
@@ -237,8 +252,9 @@ def train(config):
 
                 if total_step >= save_step:
                     logging.info(f'Save and eval checkpoint {total_step}...')
-                    torch.save(nnet.state_dict(), os.path.join(
-                        config.ckpt_root, f'{total_step:04}.ckpt'))
+                    os.makedirs(os.path.join(config.outdir, f'{total_step:04}.ckpt'), exist_ok=True)
+                    torch.save(image_proj_model.state_dict(), os.path.join(
+                        config.outdir, f'{total_step:04}.ckpt', 'image_proj_model.pth'))
                     save_step += config.save_interval
 
             accelerator.wait_for_everyone()
