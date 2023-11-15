@@ -242,9 +242,9 @@ class UViT(nn.Module):
         t_img_token = t_img_token.unsqueeze(dim=1)
         t_text_token = self.time_text_embed(timestep_embedding(t_text, self.embed_dim))
         t_text_token = t_text_token.unsqueeze(dim=1)
-
-        text = self.text_embed(text)
+        
         text = torch.cat([text, ip_tokens], dim=1)
+        text = self.text_embed(text)
         clip_img = self.clip_img_embed(clip_img)
         token_embed = self.token_embedding(data_type).unsqueeze(dim=1)
 
