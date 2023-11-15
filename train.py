@@ -18,6 +18,7 @@ import clip
 from libs.clip import FrozenCLIPEmbedder
 from libs.caption_decoder import CaptionDecoder
 from torch.utils.data import DataLoader
+from transformers import CLIPVisionModelWithProjection
 from libs.schedule import stable_diffusion_beta_schedule, Schedule, LSimple_T2I
 import argparse
 import yaml
@@ -32,8 +33,8 @@ def train(config):
     prepare models
     准备各类需要的模型
     """
-    wandb.login()
-    wandb.init(project='diffusion-comp', config=config)
+    # wandb.login()
+    # wandb.init(project='diffusion-comp', config=config)
     
     accelerator, device = utils.setup(config)
 
@@ -60,14 +61,16 @@ def train(config):
         config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
 
+    image_encoder = CLIPVisionModelWithProjection.from_pretrained('image_encoder').to(device).eval()
+
     """
     处理数据部分
     """
     # process data
     train_dataset = PersonalizedBase(
-        config.data, resolution=512, class_word="boy" if "boy" in config.data else "girl",crop_face=True)
+        config.data_json, config.data_path, resolution=512, crop_face=True)
     train_dataset.prepare(autoencoder, clip_img_model,
-                          clip_text_model, caption_decoder)
+                          clip_text_model, caption_decoder, image_encoder)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,
@@ -90,7 +93,7 @@ def train(config):
 
     def train_step():
         metrics = dict()
-        z, clip_img, text, data_type = next(train_data_generator)
+        z, clip_img, text, image_embeds, data_type = next(train_data_generator)
         z = z.to(device)
         clip_img = clip_img.to(device)
         text = text.to(device)
@@ -121,59 +124,78 @@ def train(config):
         """
         write evaluation code here
         """
-
-        from configs.sample_config import get_config
-        from sample import set_seed, sample
+        from transformers import CLIPImageProcessor
+        from score_utils.face_model import FaceAnalysis
+        from load_model import process_one_json
+        from score import Evaluator, score
         import json
-        set_seed(42)
-        eval_config = get_config()
-        
-        eval_config.n_samples = 3
-        eval_config.n_iter = 1
+
+        output_folder = 'outputs'
+        test_json_folder_path = 'train_data/json'
+        out_json_dir = 'scores_json'
+
+        config.n_samples = 4
+        config.n_iter = 1
         
         autoencoder.to(device)
-        clip_text_model.to(device)  
+        clip_text_model.to(device)
+
+        face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        face_model.prepare(ctx_id=0, det_size=(512, 512))
+
+        ev = Evaluator()
+
+        context = {
+            'nnet': nnet,
+            'autoencoder': autoencoder,
+            'clip_text_model': clip_text_model,
+            'caption_decoder': caption_decoder,
+            'clip_image_processor': CLIPImageProcessor(),
+            # 'image_encoder': image_encoder,
+            # 'image_proj_model': image_proj_model,
+            'face_model': face_model,
+            'config': config,
+            'device': device
+        }
+
+        result_scores = []
+        for json_file in os.listdir(test_json_folder_path)[:2]:
+            if not json_file.endswith('.json'):
+                continue
+            with open(os.path.join(test_json_folder_path, json_file), 'r', encoding='utf-8') as f:
+                source_json = json.load(f)
+            gen_json = process_one_json(source_json, output_folder, context)
+            with open(os.path.join('bound_json_outputs', f"{source_json['id']}.json"), 'r', encoding='utf-8') as f:
+                bound_json = json.load(f)
+            os.makedirs(out_json_dir, exist_ok=True)
+            scores = score(ev, source_json, gen_json, bound_json, out_json_dir)
+            score_face = scores['normed_face_ac_scores'] / len(gen_json['images'])
+            score_image_reward = scores['normed_image_reward_ac_scores'] / len(gen_json['images'])
+            score_total = score_face * 2.5 + score_image_reward
+            result_scores.append((source_json['id'], score_face, score_image_reward, score_total))
         
         torch.cuda.empty_cache()
-         
-        for data_name in ['boy1','boy2','girl1','girl2']:
-            if data_name in config.workdir:
-                    # first sample
-                    for task in ['sim','edit']:
-                        task_name = f'{data_name}_{task}'
-                        eval_config.output_path = os.path.join('outputs', task_name)
-                        prompt_path = f'eval_prompts_advance/{task_name}.json'
-                
-                
-                        # 基于给定的prompt进行生成
-                        prompts = json.load(open(prompt_path, "r"))
-                        for prompt_index, prompt in enumerate(prompts):
-                            # 根据训练策略
-                            if "boy" in prompt:
-                                prompt = prompt.replace("boy", "sks boy")
-                            else:
-                                prompt = prompt.replace("girl", "sks girl")
 
-                            eval_config.prompt = prompt
-                            print("sampling with prompt:", prompt)
-                            with torch.no_grad():
-                                sample(prompt_index, eval_config, nnet, clip_text_model, autoencoder, device)
-                    break
-        
-        
         # then score
-        from score import score_one_task
-        scores = score_one_task('./train_data/', './eval_prompts_advance/', './outputs/', data_name)
         with open(os.path.join(config.workdir, 'score.txt'), 'a') as f:
             f.write(f'{total_step}\n')
-            for k, v in scores.items():
-                f.write(f'{k}: {v}\n')
+            for id, face, image_reward, total in result_scores:
+                f.write(f'{id}: face:{face} image reward:{image_reward} total:{total}\n')
+            total_face = sum([v for _, v, _, _ in result_scores])
+            total_image_reward = sum([v for _, _, v, _ in result_scores])
+            total_score = total_face * 2.5 + total_image_reward
+            score_dict = {
+                'face': total_face,
+                'image_reward': total_image_reward,
+                'total': total_score
+            }
+            f.write(f'total: {score_dict}')
         
     
         clip_text_model.to("cpu")
         autoencoder.to("cpu")
         
-        return scores
+        return score_dict
         
     def loop():
         log_step = 0
@@ -194,13 +216,7 @@ def train(config):
                     scores = eval(total_step)
                     eval_step += config.eval_interval
                     
-                    current_score = sum([
-                        scores['sim_face'] * config.sim_face_ratio +
-                        scores['sim_clip'] * config.sim_clip_ratio +
-                        scores['edit_face'] * config.edit_face_ratio +
-                        scores['edit_clip'] * config.edit_clip_ratio +
-                        scores['edit_text_clip'] * config.edit_text_clip_ratio
-                    ])
+                    current_score = scores['total']
                     
                     if current_score > best_score:
                         logging.info(f'saving best ckpts to {config.outdir}...')
@@ -237,10 +253,12 @@ def train(config):
 def get_args():
     parser = argparse.ArgumentParser()
     # key args
-    parser.add_argument('-d', '--data', type=str,
-                        default="train_data/boy1", help="datadir")
+    parser.add_argument('-d', '--data_json_file', type=str,
+                        default="train_data/data.json", help="Training data")
+    parser.add_argument('-r', '--data_root_path', type=str,
+                        default="train_data", help="Training data root path")
     parser.add_argument('-o', "--outdir", type=str,
-                        default="model_ouput/boy1", help="output of model")
+                        default="model_output", help="output of model")
 
     # args of logging
     parser.add_argument("--logdir", type=str, default="logs",
@@ -259,12 +277,12 @@ def main():
     args = get_args()
     config.log_dir = args.logdir
     config.outdir = args.outdir
-    config.data = args.data
-    data_name = Path(config.data).stem
+    config.data_json = args.data_json_file
+    config.data_path = args.data_root_path
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     config.workdir = os.path.join(
-        config.log_dir, f"{config_name}-{data_name}-{now}")
+        config.log_dir, f"{config_name}-{now}")
     config.ckpt_root = os.path.join(config.workdir, 'ckpts')
     config.meta_dir = os.path.join(config.workdir, "meta")
     config.nnet_path = args.nnet_path

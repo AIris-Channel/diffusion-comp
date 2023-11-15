@@ -1,16 +1,19 @@
 from PIL import Image
 import io
 import torchvision.transforms as transforms
+from transformers import CLIPImageProcessor
 import numpy as np
-import re
 import os
 import PIL
+import json
 from PIL import Image, ImageOps
 from torch.utils.data import Dataset
+from tqdm import tqdm
 import random
 import torch
 import gc
 from libs.autocrop import get_crop_face_func
+from score_utils.face_model import FaceAnalysis
 
 
 training_templates_smallest = [
@@ -147,6 +150,7 @@ def clip_transform(n_px, crop_face=False):
     if crop_face:
         _crop_face = get_crop_face_func(crop_width=n_px, crop_height=n_px)
         return transforms.Compose([
+            transforms.Resize(n_px, interpolation=transforms.InterpolationMode.BICUBIC),
             _crop_face,
             _convert_image_to_rgb,
             transforms.ToTensor(),
@@ -163,99 +167,101 @@ def clip_transform(n_px, crop_face=False):
 def vae_transform(resolution,crop_face=False):
     if crop_face:
             _crop_face = get_crop_face_func(crop_width=resolution, crop_height=resolution)
-            transform = transforms.Compose([_crop_face, transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+            transform = transforms.Compose([transforms.Resize(resolution), _crop_face, transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
     else:
         transform = transforms.Compose([transforms.Resize(resolution), transforms.CenterCrop(resolution),
                                             transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
     return transform
-    
+
+def get_face_image(face_model, image):
+    bboxes, kpss = face_model.det_model.detect(np.array(image)[:,:,::-1], max_num=1, metric='default')
+    if bboxes.shape[0] == 0:
+        return None
+    best_bbox = bboxes[0, 0:4]
+    best_score = bboxes[0, 4]
+    for i in range(1, bboxes.shape[0]):
+        bbox = bboxes[i, 0:4]
+        det_score = bboxes[i, 4]
+        if det_score > best_score:
+            best_bbox = bbox
+            best_score = det_score
+    return image.crop(best_bbox)
 
 
 class PersonalizedBase(Dataset):
     def __init__(self,
+                 data_json_file,
                  data_root,
                  resolution,
-                 repeats=100,
-                 flip_p=0.5,
-                 set="train",
-                 class_word="dog",
-                 per_image_tokens=False,
                  mixing_prob=0.25,
-                 coarse_class_text=None,
-                 reg = False,
                  crop_face = False,
-                 use_blip_caption = False
-                 ):
+                 t_drop_rate=0.05,
+                 i_drop_rate=0.05,
+                 ti_drop_rate=0.05
+                ):
 
         self.data_root = data_root
 
-        self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root) if re.search(r'\.(?:jpe?g|png)$',file_path)]
+        self.data = json.load(open(data_json_file)) # list of dict: [{"image_file": "1.png", "text": "A dog"}]
 
-        self.num_images = len(self.image_paths)
-        self._length = self.num_images 
-
-        self.placeholder_token = class_word
         self.resolution = resolution
-        self.per_image_tokens = per_image_tokens
         self.mixing_prob = mixing_prob
         
         self.resolution = resolution
         self.crop_face = crop_face
-        self.use_blip_caption = use_blip_caption
 
-        self.coarse_class_text = coarse_class_text
+        self.t_drop_rate = t_drop_rate
+        self.i_drop_rate = i_drop_rate
+        self.ti_drop_rate = ti_drop_rate
 
-        if per_image_tokens:
-            assert self.num_images < len(per_img_token_list), f"Can't use per-image tokens when the training set contains more than {len(per_img_token_list)} tokens. To enable larger sets, add more tokens to 'per_img_token_list'."
-
-        if set == "train":
-            self._length = self.num_images * repeats
-
-        self.reg = reg
         
-    def prepare(self,autoencoder,clip_img_model,clip_text_model,caption_decoder):
-        self.datas = []
-        for i in range(self.num_images):
-            pil_image = ImageOps.exif_transpose(Image.open(self.image_paths[i])).convert("RGB")
+    def prepare(self, autoencoder, clip_img_model, clip_text_model, caption_decoder, image_encoder):
+        vae_trans = vae_transform(self.resolution,crop_face=self.crop_face)
+        clip_trans = clip_transform(224,crop_face=self.crop_face)
+        face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        face_model.prepare(ctx_id=0, det_size=(512, 512))
+        clip_image_processor = CLIPImageProcessor()
+        self.empty_text = caption_decoder.encode_prefix(clip_text_model.encode('')).to('cpu')
+        for data_item in tqdm(self.data):
+            image_path = os.path.join(self.data_root, data_item['image_file'])
+            if os.path.exists(image_path + '.pth'):
+                continue
+            pil_image = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
+            text = data_item['text']
             
-            
-            placeholder_string = self.placeholder_token
-            if self.coarse_class_text:
-                placeholder_string = f"{self.coarse_class_text} {placeholder_string}"
-
-            if not self.reg:
-                text = random.choice(training_templates_smallest).format(placeholder_string)
-            else:
-                text = random.choice(reg_templates_smallest).format(placeholder_string)
-
-            # default to score-sde preprocessing
-            if self.use_blip_caption:
-                caption_text = open(re.sub(r'\.(jpe?g|png)$', '.txt', self.image_paths[i])).read().strip()
-                caption_text = caption_text.replace("boy","sks boy")
-                text = caption_text
-            img = vae_transform(self.resolution,crop_face=self.crop_face)(pil_image)
-            img4clip = clip_transform(224,crop_face=self.crop_face)(pil_image)
+            img = vae_trans(pil_image)
+            img4clip = clip_trans(pil_image)
             
             img = img.to("cuda").unsqueeze(0)
             img4clip = img4clip.to("cuda").unsqueeze(0)
+
+            z = autoencoder.encode(img)
+            clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
+            # tokens = clip_text_model.tokenizer.tokenize(text)
+            # text_input_ids = clip_text_model.tokenizer.convert_tokens_to_ids(tokens)
+            text = clip_text_model.encode(text)
+            text = caption_decoder.encode_prefix(text)
             
+            face_image = get_face_image(face_model, pil_image)
+            if face_image is None:
+                face_image = pil_image
+            clip_image = clip_image_processor(images=face_image, return_tensors="pt").pixel_values
+            image_embeds = image_encoder(clip_image.to('cuda')).image_embeds.detach().cpu()
             
-            with torch.no_grad():
-                z = autoencoder.encode(img)
-                clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
-                text = clip_text_model.encode(text)
-                text = caption_decoder.encode_prefix(text)
             data_type = 0
             z = z.to("cpu")
             clip_img = clip_img.to("cpu")
             text = text.to("cpu")
-            self.datas.append((z,clip_img,text,data_type))
-        # print("从显存中卸载autoencoder,clip_img_model,clip_text_model,caption_decoder")
-        autoencoder = autoencoder.to("cpu")
-        clip_img_model = clip_img_model.to("cpu")
-        clip_text_model = clip_text_model.to("cpu")
-        caption_decoder.caption_model = caption_decoder.caption_model.to("cpu")
-        del caption_decoder
+            image_embeds = image_embeds.to("cpu")
+
+            torch.save({
+                "z": z,
+                "text": text,
+                "clip_image": clip_img,
+                "data_type": data_type,
+                "image_embeds": image_embeds
+            }, image_path + '.pth')
+        
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
@@ -263,16 +269,28 @@ class PersonalizedBase(Dataset):
         self.transform = None
         del self.transform
         
-        
 
     def __len__(self):
-        return self._length
+        return len(self.data)
 
     def __getitem__(self, i):
+        data_item = self.data[i]
+        image_path = os.path.join(self.data_root, data_item['image_file'])
+        data_dict = torch.load(image_path + '.pth')
 
-        z = self.datas[ i % self.num_images ][0].squeeze(0)
-        clip_img = self.datas[ i % self.num_images ][1].squeeze(0)
-        text = self.datas[ i % self.num_images ][2].squeeze(0)
-        data_type = self.datas[ i % self.num_images ][3]
+        z = data_dict['z'].squeeze(0)
+        clip_img = data_dict['clip_image'].squeeze(0)
+        text = data_dict['text'].squeeze(0)
+        image_embeds = data_dict['image_embeds'].squeeze(0)
+        data_type = data_dict['data_type']
+
+        rand_num = random.random()
+        if rand_num < self.i_drop_rate:
+            image_embeds = torch.zeros_like(image_embeds)
+        elif rand_num < (self.i_drop_rate + self.t_drop_rate):
+            text = self.empty_text.squeeze(0)
+        elif rand_num < (self.i_drop_rate + self.t_drop_rate + self.ti_drop_rate):
+            text = self.empty_text.squeeze(0)
+            image_embeds = torch.zeros_like(image_embeds, dtype=image_embeds.dtype)
         
-        return z,clip_img,text,data_type
+        return z, clip_img, text, image_embeds, data_type

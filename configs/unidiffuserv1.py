@@ -23,7 +23,7 @@ def get_config():
     config.max_step = 3000
 
     config.num_workers = 1
-    config.batch_size = 5
+    config.batch_size = 2
     config.resolution = 512
 
     config.clip_img_model = "ViT-B/32"
