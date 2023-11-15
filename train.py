@@ -23,7 +23,7 @@ from libs.schedule import stable_diffusion_beta_schedule, Schedule, LSimple_T2I
 import argparse
 import yaml
 import datetime
-from pathlib import Path
+from utils import get_optimizer, get_lr_scheduler
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
 
@@ -38,19 +38,19 @@ def train(config):
     
     accelerator, device = utils.setup(config)
 
-    train_state = utils.initialize_train_state(config, device, uvit_class=UViT)
+    nnet = UViT(**config.nnet)
     logging.info(f'load nnet from {config.nnet_path}')
-    train_state.nnet.load_state_dict(torch.load(
+    nnet.load_state_dict(torch.load(
         config.nnet_path, map_location='cpu'), False)
     # train_state.nnet = train_state.nnet.half()
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
 
+    optimizer = get_optimizer(nnet.parameters(), **config.optimizer)
+    lr_scheduler = get_lr_scheduler(optimizer, **config.lr_scheduler)
     nnet, optimizer = accelerator.prepare(
-        train_state.nnet, train_state.optimizer)
-    
-    
+        nnet, optimizer)
+
     nnet.to(device)
-    lr_scheduler = train_state.lr_scheduler
 
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
     # autoencoder = autoencoder.half()
@@ -91,6 +91,8 @@ def train(config):
     schedule = Schedule(_betas)
     logging.info(f'use {schedule}')
 
+    config.step = 0
+
     def train_step():
         metrics = dict()
         z, clip_img, text, image_embeds, data_type = next(train_data_generator)
@@ -105,8 +107,7 @@ def train(config):
             accelerator.backward(loss.mean())
         optimizer.step()
         lr_scheduler.step()
-        train_state.ema_update(config.get('ema_rate', 0.9999))
-        train_state.step += 1
+        config.step += 1
         optimizer.zero_grad(set_to_none=True)
         metrics['loss'] = accelerator.gather(
             loss.detach().mean()).mean().item()
@@ -115,7 +116,7 @@ def train(config):
         metrics['loss_clip_img'] = accelerator.gather(
             loss_clip_img.detach().mean()).mean().item()
         # metrics['scale'] = accelerator.scaler.get_scale()
-        metrics['lr'] = train_state.optimizer.param_groups[0]['lr']
+        metrics['lr'] = optimizer.param_groups[0]['lr']
         return metrics
 
     @torch.no_grad()
@@ -211,7 +212,7 @@ def train(config):
 
             if accelerator.is_main_process:
                 nnet.eval()
-                total_step = train_state.step * config.batch_size
+                total_step = config.step * config.batch_size
                 if total_step >= eval_step:
                     scores = eval(total_step)
                     eval_step += config.eval_interval
@@ -221,7 +222,7 @@ def train(config):
                     if current_score > best_score:
                         logging.info(f'saving best ckpts to {config.outdir}...')
                         best_score = current_score
-                        train_state.save(os.path.join(
+                        torch.save(nnet.state_dict(), os.path.join(
                             config.outdir, 'final.ckpt'))
                 if total_step >= log_step:
                     logging.info(utils.dct2str(
@@ -236,7 +237,7 @@ def train(config):
 
                 if total_step >= save_step:
                     logging.info(f'Save and eval checkpoint {total_step}...')
-                    train_state.save(os.path.join(
+                    torch.save(nnet.state_dict(), os.path.join(
                         config.ckpt_root, f'{total_step:04}.ckpt'))
                     save_step += config.save_interval
 
