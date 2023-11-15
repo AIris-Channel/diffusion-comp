@@ -28,7 +28,7 @@ def stable_diffusion_beta_schedule(linear_start=0.00085, linear_end=0.0120, n_ti
     return _betas.numpy()
 
 
-def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, caption_decoder, device):
+def sample(prompt_index, text, ip_tokens, config, nnet, clip_text_model, autoencoder, caption_decoder, device):
     """
     using_prompt: if use prompt as file name
     """
@@ -36,6 +36,7 @@ def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, capti
     n_iter = config.n_iter
     _betas = stable_diffusion_beta_schedule()
     text = torch.stack([text] * config.n_samples)
+    ip_tokens = torch.stack([ip_tokens] * config.n_samples)
     N = len(_betas)
 
     empty_context = clip_text_model.encode([''])[0]
@@ -55,7 +56,7 @@ def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, capti
         return torch.concat([z, clip_img], dim=-1)
 
 
-    def t2i_nnet(x, timesteps, text):  # text is the low dimension version of the text clip embedding
+    def t2i_nnet(x, timesteps, text, ip_tokens):  # text is the low dimension version of the text clip embedding
         """
         1. calculate the conditional model output
         2. calculate unconditional model output
@@ -67,7 +68,7 @@ def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, capti
 
         t_text = torch.zeros(timesteps.size(0), dtype=torch.int, device=device)
 
-        z_out, clip_img_out, text_out = nnet(z, clip_img, text=text, t_img=timesteps, t_text=t_text,
+        z_out, clip_img_out, text_out = nnet(z, clip_img, text=text, ip_tokens=ip_tokens, t_img=timesteps, t_text=t_text,
                                              data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
         x_out = combine(z_out, clip_img_out)
 
@@ -77,12 +78,12 @@ def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, capti
         if config.sample.t2i_cfg_mode == 'empty_token':
             _empty_context = einops.repeat(empty_context, 'L D -> B L D', B=x.size(0))
             _empty_context = caption_decoder.encode_prefix(_empty_context)
-            z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=_empty_context, t_img=timesteps, t_text=t_text,
+            z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=_empty_context, ip_tokens=ip_tokens, t_img=timesteps, t_text=t_text,
                                                                       data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
             x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
         elif config.sample.t2i_cfg_mode == 'true_uncond':
             text_N = torch.randn_like(text)  # 3 other possible choices
-            z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=text_N, t_img=timesteps, t_text=torch.ones_like(timesteps) * N,
+            z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=text_N, ip_tokens=ip_tokens, t_img=timesteps, t_text=torch.ones_like(timesteps) * N,
                                                                       data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
             x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
         else:
@@ -119,7 +120,7 @@ def sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, capti
 
     samples = None    
     for i in range(n_iter):
-        _z, _clip_img = sample_fn(text=text)  # conditioned on the text embedding
+        _z, _clip_img = sample_fn(text=text, ip_tokens=ip_tokens)  # conditioned on the text embedding
         new_samples = unpreprocess(decode(_z))
         if samples is None:
             samples = new_samples
@@ -186,8 +187,8 @@ def process_one_json(json_data, image_output_path, context={}):
         with torch.no_grad():
             text = clip_text_model.encode(prompt)
             text = caption_decoder.encode_prefix(text).squeeze(0)
-            text = torch.cat([text, ip_tokens], dim=0)
-            sample(prompt_index, text, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
+            # text = torch.cat([text, ip_tokens], dim=0)
+            sample(prompt_index, text, ip_tokens, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
 
         paths = [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(config.n_samples)]
         

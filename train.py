@@ -113,12 +113,12 @@ def train(config):
         data_type = data_type.to(device)
         
         # image projection
-        ip_tokens = image_proj_model(image_embeds).squeeze(0)
-        text = torch.cat([text, ip_tokens], dim=1)
+        ip_tokens = image_proj_model(image_embeds)
+        # text = torch.cat([text, ip_tokens], dim=1)
 
         with torch.cuda.amp.autocast():
             loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
-                img=z, clip_img=clip_img, text=text, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
+                img=z, clip_img=clip_img, text=text, ip_tokens=ip_tokens, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
             accelerator.backward(loss.mean())
         optimizer.step()
         lr_scheduler.step()

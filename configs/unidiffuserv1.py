@@ -92,7 +92,7 @@ def get_config():
 
     # ip-adapter
     config.image_proj_tokens = 64
-    config.ip_cross_attention_dim = 64
+    config.ip_cross_attention_dim = 1536
     config.ip_clip_embeddings_dim = 1024
 
     return config

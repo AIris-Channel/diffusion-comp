@@ -233,7 +233,7 @@ class UViT(nn.Module):
     def no_weight_decay(self):
         return {'pos_embed'}
 
-    def forward(self, img, clip_img, text, t_img, t_text, data_type):
+    def forward(self, img, clip_img, text, ip_tokens, t_img, t_text, data_type):
         _, _, H, W = img.shape
 
         img = self.patch_embed(img)
@@ -244,6 +244,7 @@ class UViT(nn.Module):
         t_text_token = t_text_token.unsqueeze(dim=1)
 
         text = self.text_embed(text)
+        text = torch.cat([text, ip_tokens], dim=1)
         clip_img = self.clip_img_embed(clip_img)
         token_embed = self.token_embedding(data_type).unsqueeze(dim=1)
 
