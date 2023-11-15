@@ -5,13 +5,13 @@ import libs.autoencoder
 from libs.clip import FrozenCLIPEmbedder
 from libs.caption_decoder import CaptionDecoder
 from libs.uvit_multi_post_ln_v1 import UViT
-from ip_adapter.ip_adapter import ImageProjModel
-from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
+from libs.data import vae_transform
 from PIL import Image, ImageOps
 import einops
 from libs.dpm_solver_pp import NoiseScheduleVP, DPM_Solver
 from torchvision.utils import save_image
 import numpy as np
+from libs.face_proj import ImageProjModel
 from score_utils.face_model import FaceAnalysis
 
 
@@ -173,8 +173,10 @@ def process_one_json(json_data, image_output_path, context={}):
     ref_images = [ImageOps.exif_transpose(Image.open(os.path.join('train_data', i['path']))).convert("RGB") for i in json_data['source_group']]
     ref_faces = [get_face_image(face_model, i) for i in ref_images]
     ref_face = max(ref_faces, key=lambda x: x[1])[0]
+    ref_face = vae_transform(512, crop_face=True)(ref_face).to("cuda").unsqueeze(0)
     face_z = autoencoder.encode(ref_face)
-    face_emb = image_proj_model(face_z).squeeze(0)
+    face_emb = image_proj_model(face_z)
+    face_emb = [torch.stack([x.squeeze(0)] * config.n_samples) for x in face_emb]
 
     images = []
 

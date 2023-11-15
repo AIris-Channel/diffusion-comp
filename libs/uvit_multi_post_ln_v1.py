@@ -265,15 +265,19 @@ class UViT(nn.Module):
         x = x + pos_embed
         x = self.pos_drop(x)
 
+        face_idx = 0
         skips = []
         for blk in self.in_blocks:
-            x = blk(x) + face_emb.pop()
+            x = blk(x) + face_emb[face_idx]
+            face_idx += 1
             skips.append(x)
 
-        x = self.mid_block(x) + face_emb.pop()
+        x = self.mid_block(x) + face_emb[face_idx]
+        face_idx += 1
 
         for blk in self.out_blocks:
-            x = blk(x, skips.pop()) + face_emb.pop()
+            x = blk(x, skips.pop()) + face_emb[face_idx]
+            face_idx += 1
 
         x = self.norm(x)
 

@@ -12,9 +12,11 @@ class ImageProjModel(nn.Module):
             for _ in range(depth // 2 * 2 + 1)])
         
     def forward(self, image):
+        batch_size = image.shape[0]
+        zero_pad = torch.zeros((batch_size, 81, 1536)).to(image.device)
         outs = []
         for blk in self.patch_embeds:
-            outs.append(blk(image))
+            outs.append(torch.cat([zero_pad, blk(image)], dim=1))
         return outs
 
 if __name__ == '__main__':
