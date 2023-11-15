@@ -26,7 +26,7 @@ import datetime
 from utils import get_optimizer, get_lr_scheduler
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
-from ip_adapter.ip_adapter import ImageProjModel
+from libs.face_proj import ImageProjModel
 
 
 def train(config):
@@ -52,12 +52,12 @@ def train(config):
     # autoencoder = autoencoder.half()
 
     clip_text_model = FrozenCLIPEmbedder(
-        version=config.clip_text_model, device=device, max_length=77-config.image_proj_tokens)
+        version=config.clip_text_model, device=device)
     clip_img_model, clip_img_model_preprocess = clip.load(
         config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
 
-    image_encoder = CLIPVisionModelWithProjection.from_pretrained('image_encoder').to(device).eval()
+    # image_encoder = CLIPVisionModelWithProjection.from_pretrained('image_encoder').to(device).eval()
 
     """
     处理数据部分
@@ -66,7 +66,7 @@ def train(config):
     train_dataset = PersonalizedBase(
         config.data_json, config.data_path, resolution=512, crop_face=True)
     train_dataset.prepare(autoencoder, clip_img_model,
-                          clip_text_model, caption_decoder, image_encoder)
+                          clip_text_model, caption_decoder)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,
@@ -88,11 +88,7 @@ def train(config):
     logging.info(f'use {schedule}')
 
     # prepare ip-adapter
-    image_proj_model = ImageProjModel(
-        cross_attention_dim=config.ip_cross_attention_dim,
-        clip_embeddings_dim=config.ip_clip_embeddings_dim,
-        clip_extra_context_tokens=config.image_proj_tokens,
-    )
+    image_proj_model = ImageProjModel(**config.image_proj_model)
     image_proj_model.to(device)
     print(f"Training params: {utils.cnt_params(image_proj_model)}")
 
@@ -105,20 +101,19 @@ def train(config):
 
     def train_step():
         metrics = dict()
-        z, clip_img, text, image_embeds, data_type = next(train_data_generator)
+        z, clip_img, text, face_z, data_type = next(train_data_generator)
         z = z.to(device)
         clip_img = clip_img.to(device)
         text = text.to(device)
-        image_embeds = image_embeds.to(device)
+        face_z = face_z.to(device)
         data_type = data_type.to(device)
         
         # image projection
-        ip_tokens = image_proj_model(image_embeds)
-        # text = torch.cat([text, ip_tokens], dim=1)
+        face_emb = image_proj_model(face_z)
 
         with torch.cuda.amp.autocast():
             loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
-                img=z, clip_img=clip_img, text=text, ip_tokens=ip_tokens, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
+                img=z, clip_img=clip_img, text=text, face_emb=face_emb, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
             accelerator.backward(loss.mean())
         optimizer.step()
         lr_scheduler.step()
@@ -166,8 +161,8 @@ def train(config):
             'autoencoder': autoencoder,
             'clip_text_model': clip_text_model,
             'caption_decoder': caption_decoder,
-            'clip_image_processor': CLIPImageProcessor(),
-            'image_encoder': image_encoder,
+            # 'clip_image_processor': CLIPImageProcessor(),
+            # 'image_encoder': image_encoder,
             'image_proj_model': image_proj_model,
             'face_model': face_model,
             'config': config,

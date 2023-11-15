@@ -79,7 +79,7 @@ class Schedule(object):  # discrete time
 
 
 
-def LSimple_T2I(img, clip_img, text, ip_tokens, data_type, nnet, schedule, device):
+def LSimple_T2I(img, clip_img, text, face_emb, data_type, nnet, schedule, device):
     r"""
     文到图loss
     """
@@ -87,7 +87,7 @@ def LSimple_T2I(img, clip_img, text, ip_tokens, data_type, nnet, schedule, devic
     img_eps, clip_img_eps = eps
     img_n, clip_img_n = xn
     n = n.to(device)
-    img_out, clip_img_out, text_out = nnet(img_n, clip_img_n, text, ip_tokens=ip_tokens, t_img=n, t_text=torch.zeros_like(n, device=device), data_type=data_type)
+    img_out, clip_img_out, text_out = nnet(img_n, clip_img_n, text, face_emb=face_emb, t_img=n, t_text=torch.zeros_like(n, device=device), data_type=data_type)
 
     loss_img = mos(img_eps - img_out)
     loss_img_clip = mos(clip_img_eps - clip_img_out)

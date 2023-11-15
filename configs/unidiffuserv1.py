@@ -90,9 +90,12 @@ def get_config():
         t2i_cfg_mode='true_uncond'
     )
 
-    # ip-adapter
-    config.image_proj_tokens = 64
-    config.ip_cross_attention_dim = 64
-    config.ip_clip_embeddings_dim = 1024
+    # image proj
+    config.image_proj_model = d(
+        in_chans=4,
+        patch_size=2,
+        embed_dim=1536,
+        depth=30
+    )
 
     return config

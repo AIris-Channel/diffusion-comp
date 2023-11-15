@@ -1,7 +1,6 @@
 from PIL import Image
 import io
 import torchvision.transforms as transforms
-from transformers import CLIPImageProcessor
 import numpy as np
 import os
 import PIL
@@ -215,12 +214,11 @@ class PersonalizedBase(Dataset):
         self.ti_drop_rate = ti_drop_rate
 
         
-    def prepare(self, autoencoder, clip_img_model, clip_text_model, caption_decoder, image_encoder):
+    def prepare(self, autoencoder, clip_img_model, clip_text_model, caption_decoder):
         vae_trans = vae_transform(self.resolution,crop_face=self.crop_face)
         clip_trans = clip_transform(224,crop_face=self.crop_face)
         face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         face_model.prepare(ctx_id=0, det_size=(512, 512))
-        clip_image_processor = CLIPImageProcessor()
         self.empty_text = caption_decoder.encode_prefix(clip_text_model.encode('')).to('cpu')
         for data_item in tqdm(self.data):
             image_path = os.path.join(self.data_root, data_item['image_file'])
@@ -245,21 +243,20 @@ class PersonalizedBase(Dataset):
             face_image = get_face_image(face_model, pil_image)
             if face_image is None:
                 face_image = pil_image
-            clip_image = clip_image_processor(images=face_image, return_tensors="pt").pixel_values
-            image_embeds = image_encoder(clip_image.to('cuda')).image_embeds.detach().cpu()
+            face_z = autoencoder.encode(vae_trans(face_image).to("cuda").unsqueeze(0))
             
             data_type = 0
             z = z.to("cpu")
             clip_img = clip_img.to("cpu")
             text = text.to("cpu")
-            image_embeds = image_embeds.to("cpu")
+            face_z = face_z.to("cpu")
 
             torch.save({
                 "z": z,
                 "text": text,
                 "clip_image": clip_img,
                 "data_type": data_type,
-                "image_embeds": image_embeds
+                "face_z": face_z
             }, image_path + '.pth')
         
         if torch.cuda.is_available():
@@ -281,16 +278,16 @@ class PersonalizedBase(Dataset):
         z = data_dict['z'].squeeze(0)
         clip_img = data_dict['clip_image'].squeeze(0)
         text = data_dict['text'].squeeze(0)
-        image_embeds = data_dict['image_embeds'].squeeze(0)
+        face_z = data_dict['face_z'].squeeze(0)
         data_type = data_dict['data_type']
 
         rand_num = random.random()
         if rand_num < self.i_drop_rate:
-            image_embeds = torch.zeros_like(image_embeds)
+            face_z = torch.zeros_like(face_z)
         elif rand_num < (self.i_drop_rate + self.t_drop_rate):
             text = self.empty_text.squeeze(0)
         elif rand_num < (self.i_drop_rate + self.t_drop_rate + self.ti_drop_rate):
             text = self.empty_text.squeeze(0)
-            image_embeds = torch.zeros_like(image_embeds, dtype=image_embeds.dtype)
+            face_z = torch.zeros_like(face_z, dtype=face_z.dtype)
         
-        return z, clip_img, text, image_embeds, data_type
+        return z, clip_img, text, face_z, data_type
