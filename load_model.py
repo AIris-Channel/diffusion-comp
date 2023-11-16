@@ -219,7 +219,7 @@ def prepare_context():
     print(f'load nnet from {config.nnet_path}')
     nnet.load_state_dict(torch.load(config.nnet_path, map_location=device), False)
     autoencoder = libs.autoencoder.get_model(**config.autoencoder)
-    clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device, max_length=77-config.image_proj_tokens)
+    clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device)
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
     clip_text_model.eval().to(device)
     autoencoder.to(device)
