@@ -28,7 +28,7 @@ def stable_diffusion_beta_schedule(linear_start=0.00085, linear_end=0.0120, n_ti
     return _betas.numpy()
 
 
-def sample(prompt_index, text, face_emb, config, nnet, clip_text_model, autoencoder, caption_decoder, device):
+def sample(prompt_index, text, face_emb, config, nnet, image_proj_model, clip_text_model, autoencoder, caption_decoder, device):
     """
     using_prompt: if use prompt as file name
     """
@@ -36,6 +36,7 @@ def sample(prompt_index, text, face_emb, config, nnet, clip_text_model, autoenco
     n_iter = config.n_iter
     _betas = stable_diffusion_beta_schedule()
     text = torch.stack([text] * config.n_samples)
+    face_emb = torch.stack([face_emb.squeeze(0)] * config.n_samples)
     N = len(_betas)
 
     empty_context = clip_text_model.encode([''])[0]
@@ -55,7 +56,7 @@ def sample(prompt_index, text, face_emb, config, nnet, clip_text_model, autoenco
         return torch.concat([z, clip_img], dim=-1)
 
 
-    def t2i_nnet(x, timesteps, text, face_emb):  # text is the low dimension version of the text clip embedding
+    def t2i_nnet(x, timesteps, text, face_emb, image_proj):  # text is the low dimension version of the text clip embedding
         """
         1. calculate the conditional model output
         2. calculate unconditional model output
@@ -68,7 +69,7 @@ def sample(prompt_index, text, face_emb, config, nnet, clip_text_model, autoenco
         t_text = torch.zeros(timesteps.size(0), dtype=torch.int, device=device)
 
         z_out, clip_img_out, text_out = nnet(z, clip_img, text=text, face_emb=face_emb, t_img=timesteps, t_text=t_text,
-                                             data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+                                             data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type, image_proj=image_proj)
         x_out = combine(z_out, clip_img_out)
 
         if config.sample.scale == 0.:
@@ -78,12 +79,12 @@ def sample(prompt_index, text, face_emb, config, nnet, clip_text_model, autoenco
             _empty_context = einops.repeat(empty_context, 'L D -> B L D', B=x.size(0))
             _empty_context = caption_decoder.encode_prefix(_empty_context)
             z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=_empty_context, face_emb=face_emb, t_img=timesteps, t_text=t_text,
-                                                                      data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+                                                                      data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type, image_proj=image_proj)
             x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
         elif config.sample.t2i_cfg_mode == 'true_uncond':
             text_N = torch.randn_like(text)  # 3 other possible choices
             z_out_uncond, clip_img_out_uncond, text_out_uncond = nnet(z, clip_img, text=text_N, face_emb=face_emb, t_img=timesteps, t_text=torch.ones_like(timesteps) * N,
-                                                                      data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type)
+                                                                      data_type=torch.zeros_like(t_text, device=device, dtype=torch.int) + config.data_type, image_proj=image_proj)
             x_out_uncond = combine(z_out_uncond, clip_img_out_uncond)
         else:
             raise NotImplementedError
@@ -119,7 +120,7 @@ def sample(prompt_index, text, face_emb, config, nnet, clip_text_model, autoenco
 
     samples = None    
     for i in range(n_iter):
-        _z, _clip_img = sample_fn(text=text, face_emb=face_emb)  # conditioned on the text embedding
+        _z, _clip_img = sample_fn(text=text, face_emb=face_emb, image_proj=image_proj_model)  # conditioned on the text embedding
         new_samples = unpreprocess(decode(_z))
         if samples is None:
             samples = new_samples
@@ -175,8 +176,8 @@ def process_one_json(json_data, image_output_path, context={}):
     ref_face = max(ref_faces, key=lambda x: x[1])[0]
     ref_face = vae_transform(512, crop_face=True)(ref_face).to("cuda").unsqueeze(0)
     face_z = autoencoder.encode(ref_face)
-    face_emb = image_proj_model(face_z)
-    face_emb = [torch.stack([x.squeeze(0)] * config.n_samples) for x in face_emb]
+    # face_emb = image_proj_model(face_z)
+    # face_emb = [torch.stack([x.squeeze(0)] * config.n_samples) for x in face_emb]
 
     images = []
 
@@ -185,7 +186,7 @@ def process_one_json(json_data, image_output_path, context={}):
         with torch.no_grad():
             text = clip_text_model.encode(prompt)
             text = caption_decoder.encode_prefix(text).squeeze(0)
-            sample(prompt_index, text, face_emb, config, nnet, clip_text_model, autoencoder, caption_decoder, device)
+            sample(prompt_index, text, face_z, config, nnet, image_proj_model, clip_text_model, autoencoder, caption_decoder, device)
 
         paths = [os.path.join(output_folder, f'{prompt_index}-{idx:03}.jpg') for idx in range(config.n_samples)]
         

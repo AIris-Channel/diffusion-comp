@@ -95,7 +95,13 @@ def get_config():
         in_chans=4,
         patch_size=2,
         embed_dim=1536,
-        depth=30
+        depth=6,
+        num_heads=16,
+        mlp_ratio=4,
+        qkv_bias=False,
+        drop_rate=0.,
+        attn_drop_rate=0.,
+        use_checkpoint=True
     )
 
     return config

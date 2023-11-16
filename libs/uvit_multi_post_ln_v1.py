@@ -233,7 +233,7 @@ class UViT(nn.Module):
     def no_weight_decay(self):
         return {'pos_embed'}
 
-    def forward(self, img, clip_img, text, face_emb, t_img, t_text, data_type):
+    def forward(self, img, clip_img, text, face_emb, t_img, t_text, data_type, image_proj):
         _, _, H, W = img.shape
 
         img = self.patch_embed(img)
@@ -265,19 +265,26 @@ class UViT(nn.Module):
         x = x + pos_embed
         x = self.pos_drop(x)
 
-        face_idx = 0
+        block_idx = 0
         skips = []
         for blk in self.in_blocks:
-            x = blk(x) + face_emb[face_idx]
-            face_idx += 1
+            if block_idx % 5 == 0:
+                x = blk(x) + image_proj(x, face_emb, block_idx // 5)
+            else:
+                x = blk(x)
             skips.append(x)
+            block_idx += 1
 
-        x = self.mid_block(x) + face_emb[face_idx]
-        face_idx += 1
+        x = self.mid_block(x) + image_proj(x, face_emb, block_idx // 5)
+        block_idx += 1
 
         for blk in self.out_blocks:
-            x = blk(x, skips.pop()) + face_emb[face_idx]
-            face_idx += 1
+            _x = skips.pop()
+            if block_idx % 5 == 0:
+                x = blk(x, _x) + image_proj(x, face_emb, block_idx // 5, _x)
+            else:
+                x = blk(x, _x)
+            block_idx += 1
 
         x = self.norm(x)
 

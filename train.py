@@ -109,11 +109,11 @@ def train(config):
         data_type = data_type.to(device)
         
         # image projection
-        face_emb = image_proj_model(face_z)
+        # face_emb = image_proj_model(face_z)
 
         with torch.cuda.amp.autocast():
             loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
-                img=z, clip_img=clip_img, text=text, face_emb=face_emb, data_type=data_type, nnet=nnet, schedule=schedule, device=device)
+                img=z, clip_img=clip_img, text=text, face_emb=face_z, data_type=data_type, nnet=nnet, image_proj=image_proj_model, schedule=schedule, device=device)
             accelerator.backward(loss.mean())
         optimizer.step()
         lr_scheduler.step()
@@ -209,7 +209,7 @@ def train(config):
         
     def loop():
         log_step = 0
-        eval_step = 0
+        eval_step = config.eval_interval
         save_step = config.save_interval
         
         best_score = float('-inf')
@@ -239,8 +239,8 @@ def train(config):
                         dict(step=total_step, **metrics)))
                     wandb.log(utils.add_prefix(
                         metrics, 'train'), step=total_step)
-                    wandb.log(utils.add_prefix(
-                        scores, 'eval'), step=total_step)
+                    # wandb.log(utils.add_prefix(
+                    #     scores, 'eval'), step=total_step)
                     log_step += config.log_interval
 
       
