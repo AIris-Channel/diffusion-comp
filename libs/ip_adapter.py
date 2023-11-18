@@ -48,12 +48,12 @@ class IPAttnProcessor(nn.Module):
         self.init()
 
     def init(self):
-        init.zeros_(self.kv.weight)
+        init.normal_(self.kv.weight, mean=0, std=0.01)
         if self.kv.bias is not None:
-            init.zeros_(self.kv.bias)
-        init.zeros_(self.proj.weight)
+            init.normal_(self.kv.bias, mean=0, std=0.01)
+        init.normal_(self.proj.weight, mean=0, std=0.01)
         if self.proj.bias is not None:
-            init.zeros_(self.proj.bias)
+            init.normal_(self.proj.bias, mean=0, std=0.01)
 
     def forward(self, x, ip_tokens):
         org_x, q = self.org_forward(x)
