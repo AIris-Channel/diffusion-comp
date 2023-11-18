@@ -81,17 +81,31 @@ class Attention(nn.Module):
         if ATTENTION_MODE == 'flash':
             qkv = einops.rearrange(qkv, 'B L (K H D) -> K B H L D', K=3, H=self.num_heads).float()
             q, k, v = qkv[0], qkv[1], qkv[2]  # B H L D
-            x = torch.nn.functional.scaled_dot_product_attention(q, k, v)
-            x = einops.rearrange(x, 'B H L D -> B L (H D)')
         elif ATTENTION_MODE == 'xformers':
             qkv = einops.rearrange(qkv, 'B L (K H D) -> K B L H D', K=3, H=self.num_heads)
             q, k, v = qkv[0], qkv[1], qkv[2]  # B L H D
-            x = xformers.ops.memory_efficient_attention(q, k, v)
-            x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
         elif ATTENTION_MODE == 'math':
             with torch.amp.autocast(device_type='cuda', enabled=False):
                 qkv = einops.rearrange(qkv, 'B L (K H D) -> K B H L D', K=3, H=self.num_heads).float()
                 q, k, v = qkv[0], qkv[1], qkv[2]  # B H L D
+        else:
+            raise NotImplemented
+        
+        x = self.get_attn(q, k, v, B, L, C, ip_tokens)
+
+        x = self.proj(x)
+        x = self.proj_drop(x)
+        return x
+    
+    def get_attn(self, q, k, v, B, L, C, ip_tokens=None):
+        if ATTENTION_MODE == 'flash':
+            x = torch.nn.functional.scaled_dot_product_attention(q, k, v)
+            x = einops.rearrange(x, 'B H L D -> B L (H D)')
+        elif ATTENTION_MODE == 'xformers':
+            x = xformers.ops.memory_efficient_attention(q, k, v)
+            x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
+        elif ATTENTION_MODE == 'math':
+            with torch.amp.autocast(device_type='cuda', enabled=False):
                 attn = (q @ k.transpose(-2, -1)) * self.scale
                 attn = attn.softmax(dim=-1)
                 attn = self.attn_drop(attn)
@@ -99,9 +113,7 @@ class Attention(nn.Module):
         else:
             raise NotImplemented
 
-        x = self.proj(x)
-        x = self.proj_drop(x)
-        return x, q
+        return x
 
 
 class Block(nn.Module):

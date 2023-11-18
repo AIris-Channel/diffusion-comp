@@ -55,27 +55,29 @@ class IPAttnProcessor(nn.Module):
         if self.proj.bias is not None:
             init.zeros_(self.proj.bias)
 
-    def forward(self, x, ip_tokens):
-        org_x, q = self.org_forward(x)
-        q = q.float()
-
-        B, L, C = x.shape
-
+    def forward(self, q, k, v, B, L, C, ip_tokens):
         kv = self.kv(ip_tokens)
+
         if ATTENTION_MODE == 'flash':
             kv = einops.rearrange(kv, 'B L (K H D) -> K B H L D', K=2, H=self.num_heads).float()
-            k, v = kv[0], kv[1]  # B H L D
+            _k, _v = kv[0], kv[1]  # B H L D
+            k = torch.cat([k, _k], dim=2)
+            v = torch.cat([v, _v], dim=2)
             x = nn.functional.scaled_dot_product_attention(q, k, v)
             x = einops.rearrange(x, 'B H L D -> B L (H D)')
         elif ATTENTION_MODE == 'xformers':
             kv = einops.rearrange(kv, 'B L (K H D) -> K B L H D', K=2, H=self.num_heads).float()
-            k, v = kv[0], kv[1]  # B L H D
+            _k, _v = kv[0], kv[1]  # B L H D
+            k = torch.cat([k, _k], dim=2)
+            v = torch.cat([v, _v], dim=2)
             x = xformers.ops.memory_efficient_attention(q, k, v)
             x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
         elif ATTENTION_MODE == 'math':
             with torch.amp.autocast(device_type='cuda', enabled=False):
                 kv = einops.rearrange(kv, 'B L (K H D) -> K B H L D', K=2, H=self.num_heads).float()
-                k, v = kv[0], kv[1]  # B H L D
+                _k, _v = kv[0], kv[1]  # B H L D
+                k = torch.cat([k, _k], dim=2)
+                v = torch.cat([v, _v], dim=2)
                 _attn = (q @ k.transpose(-2, -1)) * self.qk_scale
                 _attn = _attn.softmax(dim=-1)
                 _attn = self.attn_drop(_attn)
@@ -83,15 +85,11 @@ class IPAttnProcessor(nn.Module):
         else:
             raise NotImplemented
 
-        x = self.proj(x)
-        x = self.proj_drop(x)
-        x = org_x + x
-
-        return x, q
+        return x
     
     def apply_to(self, attn):
-        self.org_forward = attn.forward
-        attn.forward = self.forward
+        self.org_attn = attn.get_attn
+        attn.get_attn = self.forward
 
 
 class IPAdapter(nn.Module):
