@@ -101,7 +101,7 @@ class Attention(nn.Module):
 
         x = self.proj(x)
         x = self.proj_drop(x)
-        return x
+        return x, q
 
 
 class Block(nn.Module):
@@ -131,7 +131,7 @@ class Block(nn.Module):
         if self.skip_linear is not None:
             x = self.skip_linear(torch.cat([x, skip], dim=-1))
             x = self.norm1(x)
-        x = x + self.drop_path(self.attn(x, ip_tokens))
+        x = x + self.drop_path(self.attn(x, ip_tokens)[0])
         x = self.norm2(x)
 
         x = x + self.drop_path(self.mlp(x))

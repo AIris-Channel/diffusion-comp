@@ -46,27 +46,25 @@ class IPAttnProcessor(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x, ip_tokens):
-        org_x = self.org_forward(x)
+        org_x, q = self.org_forward(x)
+        q = q.float()
 
         B, L, C = x.shape
 
         kv = self.kv(ip_tokens)
         if ATTENTION_MODE == 'flash':
             kv = einops.rearrange(kv, 'B L (K H D) -> K B H L D', K=2, H=self.num_heads).float()
-            q = einops.rearrange(x, 'B L (K H D) -> K B H L D', K=1, H=self.num_heads).float().squeeze(0)
             k, v = kv[0], kv[1]  # B H L D
             x = nn.functional.scaled_dot_product_attention(q, k, v)
             x = einops.rearrange(x, 'B H L D -> B L (H D)')
         elif ATTENTION_MODE == 'xformers':
             kv = einops.rearrange(kv, 'B L (K H D) -> K B L H D', K=2, H=self.num_heads).float()
-            q = einops.rearrange(x, 'B L (K H D) -> K B L H D', K=1, H=self.num_heads).float().squeeze(0)
             k, v = kv[0], kv[1]  # B L H D
             x = xformers.ops.memory_efficient_attention(q, k, v)
             x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
         elif ATTENTION_MODE == 'math':
             with torch.amp.autocast(device_type='cuda', enabled=False):
                 kv = einops.rearrange(kv, 'B L (K H D) -> K B H L D', K=2, H=self.num_heads).float()
-                q = einops.rearrange(x, 'B L (K H D) -> K B H L D', K=1, H=self.num_heads).float().squeeze(0)
                 k, v = kv[0], kv[1]  # B H L D
                 _attn = (q @ k.transpose(-2, -1)) * self.qk_scale
                 _attn = _attn.softmax(dim=-1)
@@ -79,7 +77,7 @@ class IPAttnProcessor(nn.Module):
         x = self.proj_drop(x)
         x = org_x + x
 
-        return x
+        return x, q
     
     def apply_to(self, attn):
         self.org_forward = attn.forward
