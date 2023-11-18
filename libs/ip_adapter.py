@@ -42,42 +42,30 @@ class IPAttnProcessor(nn.Module):
         self.qk_scale = qk_scale or head_dim ** -0.5
 
         self.kv = nn.Linear(dim, dim * 2, bias=kv_bias)
-        self.attn_drop = nn.Dropout(attn_drop)
-        self.proj = nn.Linear(dim, dim)
-        self.proj_drop = nn.Dropout(proj_drop)
-        self.init()
-
-    def init(self):
-        init.zeros_(self.kv.weight)
-        if self.kv.bias is not None:
-            init.zeros_(self.kv.bias)
-        init.zeros_(self.proj.weight)
-        if self.proj.bias is not None:
-            init.zeros_(self.proj.bias)
 
     def forward(self, q, k, v, B, L, C, ip_tokens):
         kv = self.kv(ip_tokens)
-
+        q = q.float()
         if ATTENTION_MODE == 'flash':
             kv = einops.rearrange(kv, 'B L (K H D) -> K B H L D', K=2, H=self.num_heads).float()
             _k, _v = kv[0], kv[1]  # B H L D
-            k = torch.cat([k, _k], dim=2)
-            v = torch.cat([v, _v], dim=2)
+            k = torch.cat([k, _k], dim=1)
+            v = torch.cat([v, _v], dim=1)
             x = nn.functional.scaled_dot_product_attention(q, k, v)
             x = einops.rearrange(x, 'B H L D -> B L (H D)')
         elif ATTENTION_MODE == 'xformers':
             kv = einops.rearrange(kv, 'B L (K H D) -> K B L H D', K=2, H=self.num_heads).float()
             _k, _v = kv[0], kv[1]  # B L H D
-            k = torch.cat([k, _k], dim=2)
-            v = torch.cat([v, _v], dim=2)
+            k = torch.cat([k, _k], dim=1)
+            v = torch.cat([v, _v], dim=1)
             x = xformers.ops.memory_efficient_attention(q, k, v)
             x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
         elif ATTENTION_MODE == 'math':
             with torch.amp.autocast(device_type='cuda', enabled=False):
                 kv = einops.rearrange(kv, 'B L (K H D) -> K B H L D', K=2, H=self.num_heads).float()
                 _k, _v = kv[0], kv[1]  # B H L D
-                k = torch.cat([k, _k], dim=2)
-                v = torch.cat([v, _v], dim=2)
+                k = torch.cat([k, _k], dim=1)
+                v = torch.cat([v, _v], dim=1)
                 _attn = (q @ k.transpose(-2, -1)) * self.qk_scale
                 _attn = _attn.softmax(dim=-1)
                 _attn = self.attn_drop(_attn)
