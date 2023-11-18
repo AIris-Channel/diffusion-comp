@@ -21,6 +21,7 @@ def get_config():
     config.eval_interval = 300
     config.save_interval = 1e10
     config.max_step = 3000
+    config.save_best = True
 
     config.num_workers = 1
     config.batch_size = 2
@@ -91,8 +92,12 @@ def get_config():
     )
 
     # ip-adapter
-    config.image_proj_tokens = 64
-    config.ip_cross_attention_dim = 64
+    config.image_proj_tokens = 4
+    config.ip_cross_attention_dim = 1536
     config.ip_clip_embeddings_dim = 1024
+    config.attn_proc = d(
+        dim=1536,
+        num_heads=24
+    )
 
     return config

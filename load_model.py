@@ -5,7 +5,7 @@ import libs.autoencoder
 from libs.clip import FrozenCLIPEmbedder
 from libs.caption_decoder import CaptionDecoder
 from libs.uvit_multi_post_ln_v1 import UViT
-from ip_adapter.ip_adapter import ImageProjModel
+from libs.ip_adapter import ImageProjModel, IPAttnProcessor, IPAdapter
 from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
 from PIL import Image, ImageOps
 import einops
@@ -161,7 +161,7 @@ def process_one_json(json_data, image_output_path, context={}):
     caption_decoder = context['caption_decoder']
     clip_image_processor = context['clip_image_processor']
     image_encoder = context['image_encoder']
-    image_proj_model = context['image_proj_model']
+    ip_adapter = context['ip_adapter']
     face_model = context['face_model']
     config = context['config']
     device = context['device']
@@ -178,7 +178,7 @@ def process_one_json(json_data, image_output_path, context={}):
     ref_face = max(ref_faces, key=lambda x: x[1])[0]
     ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
     image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
-    ip_tokens = image_proj_model(image_embeds).squeeze(0)
+    ip_tokens = ip_adapter(image_embeds).squeeze(0)
 
     images = []
 
@@ -221,7 +221,7 @@ def prepare_context():
     print(f'load nnet from {config.nnet_path}')
     nnet.load_state_dict(torch.load(config.nnet_path, map_location=device), False)
     autoencoder = libs.autoencoder.get_model(**config.autoencoder)
-    clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device, max_length=77-config.image_proj_tokens)
+    clip_text_model = FrozenCLIPEmbedder(version=config.clip_text_model, device=device)
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
     clip_text_model.eval().to(device)
     autoencoder.to(device)
@@ -235,9 +235,24 @@ def prepare_context():
         cross_attention_dim=config.ip_cross_attention_dim,
         clip_embeddings_dim=config.ip_clip_embeddings_dim,
         clip_extra_context_tokens=config.image_proj_tokens,
-    ).eval()
-    image_proj_model.load_state_dict(torch.load('model_output/final.ckpt/image_proj_model.pth', map_location=device), False)
-    image_proj_model.to(device)
+    )
+
+    adapter_modules = torch.nn.ModuleList()
+    for blk in nnet.in_blocks:
+        attn_proc = IPAttnProcessor(**config.attn_proc)
+        attn_proc.apply_to(blk.attn)
+        adapter_modules.append(attn_proc)
+    attn_proc = IPAttnProcessor(**config.attn_proc)
+    attn_proc.apply_to(nnet.mid_block.attn)
+    adapter_modules.append(attn_proc)
+    for blk in nnet.out_blocks:
+        attn_proc = IPAttnProcessor(**config.attn_proc)
+        attn_proc.apply_to(blk.attn)
+        adapter_modules.append(attn_proc)
+
+    ip_adapter = IPAdapter(image_proj_model, adapter_modules).eval()
+    ip_adapter.load_state_dict(torch.load('model_output/final.ckpt/ip_adapter.pth', map_location=device), False)
+    ip_adapter.to(device)
 
     face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
     face_model.prepare(ctx_id=0, det_size=(512, 512))
@@ -249,7 +264,7 @@ def prepare_context():
         'caption_decoder': caption_decoder,
         'clip_image_processor': clip_image_processor,
         'image_encoder': image_encoder,
-        'image_proj_model': image_proj_model,
+        'ip_adapter': ip_adapter,
         'face_model': face_model,
         'config': config,
         'device': device

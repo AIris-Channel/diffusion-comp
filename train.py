@@ -26,7 +26,7 @@ import datetime
 from utils import get_optimizer, get_lr_scheduler
 from libs.data import PersonalizedBase
 from libs.uvit_multi_post_ln_v1 import UViT
-from ip_adapter.ip_adapter import ImageProjModel
+from libs.ip_adapter import ImageProjModel, IPAttnProcessor, IPAdapter
 
 
 def train(config):
@@ -52,7 +52,7 @@ def train(config):
     # autoencoder = autoencoder.half()
 
     clip_text_model = FrozenCLIPEmbedder(
-        version=config.clip_text_model, device=device, max_length=77-config.image_proj_tokens)
+        version=config.clip_text_model, device=device)
     clip_img_model, clip_img_model_preprocess = clip.load(
         config.clip_img_model, jit=False)
     clip_img_model.to(device).eval().requires_grad_(False)
@@ -93,13 +93,28 @@ def train(config):
         clip_embeddings_dim=config.ip_clip_embeddings_dim,
         clip_extra_context_tokens=config.image_proj_tokens,
     )
-    image_proj_model.to(device)
-    print(f"Training params: {utils.cnt_params(image_proj_model)}")
 
-    optimizer = get_optimizer(image_proj_model.parameters(), **config.optimizer)
+    adapter_modules = torch.nn.ModuleList()
+    for blk in nnet.in_blocks:
+        attn_proc = IPAttnProcessor(**config.attn_proc)
+        attn_proc.apply_to(blk.attn)
+        adapter_modules.append(attn_proc)
+    attn_proc = IPAttnProcessor(**config.attn_proc)
+    attn_proc.apply_to(nnet.mid_block.attn)
+    adapter_modules.append(attn_proc)
+    for blk in nnet.out_blocks:
+        attn_proc = IPAttnProcessor(**config.attn_proc)
+        attn_proc.apply_to(blk.attn)
+        adapter_modules.append(attn_proc)
+
+    ip_adapter = IPAdapter(image_proj_model, adapter_modules)
+    ip_adapter.to(device)
+    print(f"Training params: {utils.cnt_params(ip_adapter)}")
+
+    optimizer = get_optimizer(ip_adapter.parameters(), **config.optimizer)
     lr_scheduler = get_lr_scheduler(optimizer, **config.lr_scheduler)
-    image_proj_model, optimizer = accelerator.prepare(
-        image_proj_model, optimizer)
+    ip_adapter, optimizer = accelerator.prepare(
+        ip_adapter, optimizer)
 
     config.step = 0
 
@@ -113,8 +128,7 @@ def train(config):
         data_type = data_type.to(device)
         
         # image projection
-        ip_tokens = image_proj_model(image_embeds)
-        # text = torch.cat([text, ip_tokens], dim=1)
+        ip_tokens = ip_adapter(image_embeds)
 
         with torch.cuda.amp.autocast():
             loss, loss_img, loss_clip_img, loss_text = LSimple_T2I(
@@ -168,7 +182,7 @@ def train(config):
             'caption_decoder': caption_decoder,
             'clip_image_processor': CLIPImageProcessor(),
             'image_encoder': image_encoder,
-            'image_proj_model': image_proj_model,
+            'ip_adapter': ip_adapter,
             'face_model': face_model,
             'config': config,
             'device': device
@@ -220,12 +234,12 @@ def train(config):
         best_score = float('-inf')
         
         while True:
-            image_proj_model.train()
-            with accelerator.accumulate(image_proj_model):
+            ip_adapter.train()
+            with accelerator.accumulate(ip_adapter):
                 metrics = train_step()
 
             if accelerator.is_main_process:
-                image_proj_model.eval()
+                ip_adapter.eval()
                 total_step = config.step * config.batch_size
                 if total_step >= eval_step:
                     scores = eval(total_step)
@@ -233,12 +247,12 @@ def train(config):
                     
                     current_score = scores['total']
                     
-                    if current_score > best_score:
+                    if config.save_best and current_score > best_score:
                         logging.info(f'saving best ckpts to {config.outdir}...')
                         best_score = current_score
                         os.makedirs(os.path.join(config.outdir, 'final.ckpt'), exist_ok=True)
-                        torch.save(image_proj_model.state_dict(), os.path.join(
-                            config.outdir, 'final.ckpt', 'image_proj_model.pth'))
+                        torch.save(ip_adapter.state_dict(), os.path.join(
+                            config.outdir, 'final.ckpt', 'ip_adapter.pth'))
                 if total_step >= log_step:
                     logging.info(utils.dct2str(
                         dict(step=total_step, **metrics)))
@@ -253,15 +267,15 @@ def train(config):
                 if total_step >= save_step:
                     logging.info(f'Save and eval checkpoint {total_step}...')
                     os.makedirs(os.path.join(config.outdir, f'{total_step:04}.ckpt'), exist_ok=True)
-                    torch.save(image_proj_model.state_dict(), os.path.join(
-                        config.outdir, f'{total_step:04}.ckpt', 'image_proj_model.pth'))
+                    torch.save(ip_adapter.state_dict(), os.path.join(
+                        config.outdir, f'{total_step:04}.ckpt', 'ip_adapter.pth'))
                     save_step += config.save_interval
 
             accelerator.wait_for_everyone()
 
-            if total_step >= config.max_step:
-                # logging.info(f"saving final ckpts to {config.outdir}...")
-                # train_state.save(os.path.join(config.outdir, 'final.ckpt')) # only save best model
+            if total_step >= config.max_step and not config.save_best:
+                logging.info(f"saving final ckpts to {config.outdir}...")
+                torch.save(ip_adapter.state_dict(), os.path.join(config.outdir, 'final.ckpt', 'ip_adapter.pth'))
                 break
 
     loop()

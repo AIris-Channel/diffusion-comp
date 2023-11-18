@@ -74,7 +74,7 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-    def forward(self, x):
+    def forward(self, x, ip_tokens=None):
         B, L, C = x.shape
 
         qkv = self.qkv(x)
@@ -121,17 +121,17 @@ class Block(nn.Module):
         self.skip_linear = nn.Linear(2 * dim, dim) if skip else None
         self.use_checkpoint = use_checkpoint
 
-    def forward(self, x, skip=None):
+    def forward(self, x, skip=None, ip_tokens=None):
         if self.use_checkpoint:
-            return torch.utils.checkpoint.checkpoint(self._forward, x, skip)
+            return torch.utils.checkpoint.checkpoint(self._forward, x, skip, ip_tokens)
         else:
-            return self._forward(x, skip)
+            return self._forward(x, skip, ip_tokens)
 
-    def _forward(self, x, skip=None):
+    def _forward(self, x, skip=None, ip_tokens=None):
         if self.skip_linear is not None:
             x = self.skip_linear(torch.cat([x, skip], dim=-1))
             x = self.norm1(x)
-        x = x + self.drop_path(self.attn(x))
+        x = x + self.drop_path(self.attn(x, ip_tokens))
         x = self.norm2(x)
 
         x = x + self.drop_path(self.mlp(x))
@@ -242,8 +242,7 @@ class UViT(nn.Module):
         t_img_token = t_img_token.unsqueeze(dim=1)
         t_text_token = self.time_text_embed(timestep_embedding(t_text, self.embed_dim))
         t_text_token = t_text_token.unsqueeze(dim=1)
-        
-        text = torch.cat([text, ip_tokens], dim=1)
+
         text = self.text_embed(text)
         clip_img = self.clip_img_embed(clip_img)
         token_embed = self.token_embedding(data_type).unsqueeze(dim=1)
@@ -267,13 +266,13 @@ class UViT(nn.Module):
 
         skips = []
         for blk in self.in_blocks:
-            x = blk(x)
+            x = blk(x, ip_tokens=ip_tokens)
             skips.append(x)
 
-        x = self.mid_block(x)
+        x = self.mid_block(x, ip_tokens=ip_tokens)
 
         for blk in self.out_blocks:
-            x = blk(x, skips.pop())
+            x = blk(x, skips.pop(), ip_tokens=ip_tokens)
 
         x = self.norm(x)
 
