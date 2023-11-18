@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.init as init
 import einops
 
 if hasattr(nn.functional, 'scaled_dot_product_attention'):
@@ -44,6 +45,15 @@ class IPAttnProcessor(nn.Module):
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
+        self.init()
+
+    def init(self):
+        init.zeros_(self.kv.weight)
+        if self.kv.bias is not None:
+            init.zeros_(self.kv.bias)
+        init.zeros_(self.proj.weight)
+        if self.proj.bias is not None:
+            init.zeros_(self.proj.bias)
 
     def forward(self, x, ip_tokens):
         org_x, q = self.org_forward(x)
