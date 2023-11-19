@@ -16,6 +16,7 @@ for img_path in os.listdir(root_dir):
     if not img_path.endswith('.jpg'):
         continue
     # Open and process the image
+    img_path = os.path.join(root_dir, img_path)
     raw_image = ImageOps.exif_transpose(Image.open(img_path).convert('RGB'))
 
     # Conditional image captioning
