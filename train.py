@@ -66,7 +66,7 @@ def train(config):
     train_dataset = PersonalizedBase(
         config.data_dir, resolution=512, crop_face=False)
     train_dataset.prepare(autoencoder, clip_img_model,
-                          clip_text_model, caption_decoder, image_encoder)
+                          clip_text_model, caption_decoder, image_encoder, device)
     train_dataset_loader = DataLoader(train_dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_workers,

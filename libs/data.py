@@ -1,11 +1,8 @@
 from PIL import Image
-import io
 import torchvision.transforms as transforms
 from transformers import CLIPImageProcessor
 import numpy as np
-import os
-import PIL
-import json
+import os, glob
 from PIL import Image, ImageOps
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -199,7 +196,7 @@ class PersonalizedBase(Dataset):
                  ti_drop_rate=0.05
                 ):
 
-        self.data_paths = [os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith('.jpg')]
+        self.data_paths = glob.glob(f'{data_dir}/**/*.jpg')
 
         self.resolution = resolution
         self.mixing_prob = mixing_prob
@@ -212,7 +209,7 @@ class PersonalizedBase(Dataset):
         self.ti_drop_rate = ti_drop_rate
 
         
-    def prepare(self, autoencoder, clip_img_model, clip_text_model, caption_decoder, image_encoder):
+    def prepare(self, autoencoder, clip_img_model, clip_text_model, caption_decoder, image_encoder, device):
         vae_trans = vae_transform(self.resolution,crop_face=self.crop_face)
         clip_trans = clip_transform(224,crop_face=self.crop_face)
         face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
@@ -228,8 +225,8 @@ class PersonalizedBase(Dataset):
             img = vae_trans(pil_image)
             img4clip = clip_trans(pil_image)
             
-            img = img.to("cuda").unsqueeze(0)
-            img4clip = img4clip.to("cuda").unsqueeze(0)
+            img = img.to(device).unsqueeze(0)
+            img4clip = img4clip.to(device).unsqueeze(0)
 
             z = autoencoder.encode(img)
             clip_img = clip_img_model.encode_image(img4clip).unsqueeze(1)
@@ -242,7 +239,7 @@ class PersonalizedBase(Dataset):
             if face_image is None:
                 face_image = pil_image
             clip_image = clip_image_processor(images=face_image, return_tensors="pt").pixel_values
-            image_embeds = image_encoder(clip_image.to('cuda')).image_embeds.detach().cpu()
+            image_embeds = image_encoder(clip_image.to(device)).image_embeds.detach().cpu()
             
             data_type = 0
             z = z.to("cpu")
