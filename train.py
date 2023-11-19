@@ -258,8 +258,8 @@ def train(config):
                         dict(step=total_step, **metrics)))
                     wandb.log(utils.add_prefix(
                         metrics, 'train'), step=total_step)
-                    wandb.log(utils.add_prefix(
-                        scores, 'eval'), step=total_step)
+                    # wandb.log(utils.add_prefix(
+                    #     scores, 'eval'), step=total_step)
                     log_step += config.log_interval
 
       
