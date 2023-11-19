@@ -285,7 +285,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     # key args
     parser.add_argument('-d', '--data_dir', type=str,
-                        default="train_data/data.json", help="Training data directory")
+                        default="train_data", help="Training data directory")
     parser.add_argument('-o', "--outdir", type=str,
                         default="model_output", help="output of model")
 
