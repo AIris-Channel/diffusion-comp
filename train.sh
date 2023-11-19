@@ -1,2 +1,2 @@
 #!/bin/bash
-accelerate launch --mixed_precision fp16 --num_processes 8 train.py
+accelerate launch --multi_gpu --mixed_precision fp16 --num_processes 2 train.py
