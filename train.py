@@ -271,12 +271,12 @@ def train(config):
                         config.outdir, f'{total_step:04}.ckpt', 'ip_adapter.pth'))
                     save_step += config.save_interval
 
-            accelerator.wait_for_everyone()
+                if total_step >= config.max_step and not config.save_best:
+                    logging.info(f"saving final ckpts to {config.outdir}...")
+                    torch.save(ip_adapter.state_dict(), os.path.join(config.outdir, 'final.ckpt', 'ip_adapter.pth'))
+                    break
 
-            if total_step >= config.max_step and not config.save_best:
-                logging.info(f"saving final ckpts to {config.outdir}...")
-                torch.save(ip_adapter.state_dict(), os.path.join(config.outdir, 'final.ckpt', 'ip_adapter.pth'))
-                break
+            accelerator.wait_for_everyone()
 
     loop()
 
