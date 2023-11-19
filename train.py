@@ -228,7 +228,7 @@ def train(config):
         
     def loop():
         log_step = 0
-        eval_step = 0
+        eval_step = config.eval_interval
         save_step = config.save_interval
         
         best_score = float('-inf')
