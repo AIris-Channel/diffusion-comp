@@ -64,7 +64,7 @@ def train(config):
     """
     # process data
     train_dataset = PersonalizedBase(
-        config.data_json, config.data_path, resolution=512, crop_face=True)
+        config.data_dir, resolution=512, crop_face=False)
     train_dataset.prepare(autoencoder, clip_img_model,
                           clip_text_model, caption_decoder, image_encoder)
     train_dataset_loader = DataLoader(train_dataset,
@@ -284,10 +284,8 @@ def train(config):
 def get_args():
     parser = argparse.ArgumentParser()
     # key args
-    parser.add_argument('-d', '--data_json_file', type=str,
-                        default="train_data/data.json", help="Training data")
-    parser.add_argument('-r', '--data_root_path', type=str,
-                        default="train_data", help="Training data root path")
+    parser.add_argument('-d', '--data_dir', type=str,
+                        default="train_data/data.json", help="Training data directory")
     parser.add_argument('-o', "--outdir", type=str,
                         default="model_output", help="output of model")
 
@@ -308,8 +306,7 @@ def main():
     args = get_args()
     config.log_dir = args.logdir
     config.outdir = args.outdir
-    config.data_json = args.data_json_file
-    config.data_path = args.data_root_path
+    config.data_dir = args.data_dir
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     config.workdir = os.path.join(

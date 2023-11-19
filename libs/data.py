@@ -190,8 +190,7 @@ def get_face_image(face_model, image):
 
 class PersonalizedBase(Dataset):
     def __init__(self,
-                 data_json_file,
-                 data_root,
+                 data_dir,
                  resolution,
                  mixing_prob=0.25,
                  crop_face = False,
@@ -200,9 +199,7 @@ class PersonalizedBase(Dataset):
                  ti_drop_rate=0.05
                 ):
 
-        self.data_root = data_root
-
-        self.data = json.load(open(data_json_file)) # list of dict: [{"image_file": "1.png", "text": "A dog"}]
+        self.data_paths = [os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith('.jpg')]
 
         self.resolution = resolution
         self.mixing_prob = mixing_prob
@@ -222,12 +219,11 @@ class PersonalizedBase(Dataset):
         face_model.prepare(ctx_id=0, det_size=(512, 512))
         clip_image_processor = CLIPImageProcessor()
         self.empty_text = caption_decoder.encode_prefix(clip_text_model.encode('')).to('cpu')
-        for data_item in tqdm(self.data):
-            image_path = os.path.join(self.data_root, data_item['image_file'])
+        for image_path in tqdm(self.data_paths):
             if os.path.exists(image_path + '.pth'):
                 continue
             pil_image = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
-            text = data_item['text']
+            text = open(image_path + '.txt','r',encoding='utf-8').read()
             
             img = vae_trans(pil_image)
             img4clip = clip_trans(pil_image)
@@ -266,16 +262,12 @@ class PersonalizedBase(Dataset):
             torch.cuda.empty_cache()
         gc.collect()
         
-        self.transform = None
-        del self.transform
-        
 
     def __len__(self):
-        return len(self.data)
+        return len(self.data_paths)
 
     def __getitem__(self, i):
-        data_item = self.data[i]
-        image_path = os.path.join(self.data_root, data_item['image_file'])
+        image_path = self.data_paths[i]
         data_dict = torch.load(image_path + '.pth')
 
         z = data_dict['z'].squeeze(0)

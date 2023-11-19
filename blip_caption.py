@@ -10,10 +10,10 @@ processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-larg
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large", torch_dtype=torch.float16).to("cuda")
 
 # Define the root directory
-root_dir = 'generate_data'
+root_dir = 'train_data/data_provide_images'
 
 for img_path in os.listdir(root_dir):
-    if not img_path.endswith('.jpg'):
+    if not img_path.endswith('.jpg') or os.path.exists(img_path + '.txt'):
         continue
     # Open and process the image
     img_path = os.path.join(root_dir, img_path)
@@ -28,6 +28,5 @@ for img_path in os.listdir(root_dir):
     caption = re.sub(r'^this is\s*','',caption).capitalize()
     print(caption)
     # Write the caption to a .txt file
-    txt_path = img_path + '.txt'
-    with open(txt_path, 'w') as f:
+    with open(img_path + '.txt', 'w') as f:
         f.write(caption)
