@@ -251,7 +251,9 @@ def prepare_context():
         adapter_modules.append(attn_proc)
 
     ip_adapter = IPAdapter(image_proj_model, adapter_modules).eval()
-    ip_adapter.load_state_dict(torch.load('model_output/final.ckpt/ip_adapter.pth', map_location=device), False)
+    state_dict = torch.load('model_output/final.ckpt/ip_adapter.pth', map_location=device)
+    state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+    ip_adapter.load_state_dict(state_dict)
     ip_adapter.to(device)
 
     face_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
