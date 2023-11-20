@@ -178,6 +178,7 @@ def process_one_json(json_data, image_output_path, context={}):
     ref_face = max(ref_faces, key=lambda x: x[1])[0]
     ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
     image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
+    image_embeds = ip_adapter.encode(image_embeds)
     ip_tokens = ip_adapter(image_embeds).squeeze(0)
 
     images = []

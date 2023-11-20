@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+import torch.nn.functional as F
 import einops
 
 if hasattr(nn.functional, 'scaled_dot_product_attention'):
@@ -99,6 +100,12 @@ class IPAdapter(nn.Module):
         super().__init__()
         self.image_proj_model = image_proj_model
         self.adapter_modules = adapter_modules
+        self.emb_kv = nn.Parameter(torch.randn(83, 1024))
     
     def forward(self, image):
         return self.image_proj_model(image)
+    
+    def encode(self, image_emb):
+        attn_weights = F.softmax(torch.matmul(image_emb, self.emb_kv.t()), dim=-1)
+        emb = torch.matmul(attn_weights, self.emb_kv)
+        return emb
