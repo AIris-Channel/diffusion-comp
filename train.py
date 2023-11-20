@@ -46,7 +46,7 @@ def train(config):
     # train_state.nnet = train_state.nnet.half()
     caption_decoder = CaptionDecoder(device=device, **config.caption_decoder)
 
-    nnet.to(device).eval().requires_grad_(False)
+    nnet.to(device).requires_grad_(False)
 
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
     # autoencoder = autoencoder.half()
@@ -109,12 +109,20 @@ def train(config):
 
     ip_adapter = IPAdapter(image_proj_model, adapter_modules)
     ip_adapter.to(device)
+
+    params = []
+    params += ip_adapter.parameters()
+    for name, parameter in nnet.named_parameters():
+        if 'attn.qkv' in name:
+            parameter.requires_grad_(True)
+            params.append(parameter)
+    
     print(f"Training params: {utils.cnt_params(ip_adapter)}")
 
-    optimizer = get_optimizer(ip_adapter.parameters(), **config.optimizer)
+    optimizer = get_optimizer(params, **config.optimizer)
     lr_scheduler = get_lr_scheduler(optimizer, **config.lr_scheduler)
-    ip_adapter, optimizer = accelerator.prepare(
-        ip_adapter, optimizer)
+    ip_adapter, nnet, optimizer = accelerator.prepare(
+        ip_adapter, nnet, optimizer)
 
     config.step = 0
 
@@ -235,7 +243,7 @@ def train(config):
         
         while True:
             ip_adapter.train()
-            with accelerator.accumulate(ip_adapter):
+            with accelerator.accumulate([ip_adapter, nnet]):
                 metrics = train_step()
 
             if accelerator.is_main_process:
@@ -253,6 +261,8 @@ def train(config):
                         os.makedirs(os.path.join(config.outdir, 'final.ckpt'), exist_ok=True)
                         torch.save(ip_adapter.state_dict(), os.path.join(
                             config.outdir, 'final.ckpt', 'ip_adapter.pth'))
+                        torch.save(nnet.state_dict(), os.path.join(
+                            config.outdir, 'final.ckpt', 'nnet.pth'))
                 if total_step >= log_step:
                     logging.info(utils.dct2str(
                         dict(step=total_step, **metrics)))
@@ -269,11 +279,14 @@ def train(config):
                     os.makedirs(os.path.join(config.outdir, f'{total_step:04}.ckpt'), exist_ok=True)
                     torch.save(ip_adapter.state_dict(), os.path.join(
                         config.outdir, f'{total_step:04}.ckpt', 'ip_adapter.pth'))
+                    torch.save(nnet.state_dict(), os.path.join(
+                        config.outdir, f'{total_step:04}.ckpt', 'nnet.pth'))
                     save_step += config.save_interval
 
                 if total_step >= config.max_step and not config.save_best:
                     logging.info(f"saving final ckpts to {config.outdir}...")
                     torch.save(ip_adapter.state_dict(), os.path.join(config.outdir, 'final.ckpt', 'ip_adapter.pth'))
+                    torch.save(nnet.state_dict(), os.path.join(config.outdir, 'final.ckpt', 'nnet.pth'))
                     break
 
             accelerator.wait_for_everyone()

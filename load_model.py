@@ -211,7 +211,7 @@ def prepare_context():
     from configs.unidiffuserv1 import get_config
     config = get_config()
     config.log_dir = 'logs'
-    config.nnet_path = 'models/uvit_v1.pth'
+    config.nnet_path = 'model_output/final.ckpt/nnet.pth'#'models/uvit_v1.pth'
     config.n_samples = 4
     config.n_iter = 1
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
