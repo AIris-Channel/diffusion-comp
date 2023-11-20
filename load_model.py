@@ -174,11 +174,18 @@ def process_one_json(json_data, image_output_path, context={}):
     os.makedirs(output_folder, exist_ok=True)
 
     ref_images = [ImageOps.exif_transpose(Image.open(os.path.join('train_data', i['path']))).convert("RGB") for i in json_data['source_group']]
-    ref_faces = [get_face_image(face_model, i) for i in ref_images]
-    ref_face = max(ref_faces, key=lambda x: x[1])[0]
-    ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
-    image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
-    image_embeds = ip_adapter.encode(image_embeds)
+    ref_faces = []
+    for i in ref_images:
+        face = get_face_image(face_model, i)
+        if face is not None:
+            ref_faces.append(face)
+    if not ref_faces:
+        image_embeds = torch.zeros((1, 1024))
+    else:
+        ref_face = max(ref_faces, key=lambda x: x[1])[0]
+        ref_clip_image = clip_image_processor(images=ref_face, return_tensors="pt").pixel_values
+        image_embeds = image_encoder(ref_clip_image.to('cuda')).image_embeds
+        image_embeds = ip_adapter.encode(image_embeds)
     ip_tokens = ip_adapter(image_embeds).squeeze(0)
 
     images = []
