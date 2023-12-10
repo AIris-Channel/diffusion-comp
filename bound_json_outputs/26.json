@@ -1,0 +1,95 @@
+{
+    "id": 26,
+    "images": [
+        {
+            "prompt": "a woman in an orange top holding a straw in her mouth ",
+            "paths": [
+                "bound_image_outputs/26/0-000.jpg",
+                "bound_image_outputs/26/0-001.jpg",
+                "bound_image_outputs/26/0-002.jpg",
+                "bound_image_outputs/26/0-003.jpg"
+            ],
+            "max_face_sim": 0.8038243055343628,
+            "min_face_sim": -0.04420581832528114,
+            "max_text_sim": 0.32421875,
+            "min_text_sim": 0.208740234375,
+            "max_image_reward": 1.3351750522851944,
+            "min_image_reward": -2.0830161809921264
+        },
+        {
+            "prompt": "a woman in a blue dress with tattoos on her arm ",
+            "paths": [
+                "bound_image_outputs/26/1-000.jpg",
+                "bound_image_outputs/26/1-001.jpg",
+                "bound_image_outputs/26/1-002.jpg",
+                "bound_image_outputs/26/1-003.jpg"
+            ],
+            "max_face_sim": 0.8038243055343628,
+            "min_face_sim": -0.019389953464269638,
+            "max_text_sim": 0.3701171875,
+            "min_text_sim": 0.19580078125,
+            "max_image_reward": 1.356339918449521,
+            "min_image_reward": -2.204037809371948
+        },
+        {
+            "prompt": "a woman in a green dress with a sunflower on her head ",
+            "paths": [
+                "bound_image_outputs/26/2-000.jpg",
+                "bound_image_outputs/26/2-001.jpg",
+                "bound_image_outputs/26/2-002.jpg",
+                "bound_image_outputs/26/2-003.jpg"
+            ],
+            "max_face_sim": 0.8038243055343628,
+            "min_face_sim": 0.014597296714782715,
+            "max_text_sim": 0.341796875,
+            "min_text_sim": 0.1676025390625,
+            "max_image_reward": 1.9154205918312073,
+            "min_image_reward": -2.202637958526611
+        },
+        {
+            "prompt": "a woman standing in front of a movie poster ",
+            "paths": [
+                "bound_image_outputs/26/3-000.jpg",
+                "bound_image_outputs/26/3-001.jpg",
+                "bound_image_outputs/26/3-002.jpg",
+                "bound_image_outputs/26/3-003.jpg"
+            ],
+            "max_face_sim": 0.8038243055343628,
+            "min_face_sim": -0.02916610799729824,
+            "max_text_sim": 0.31884765625,
+            "min_text_sim": 0.2030029296875,
+            "max_image_reward": 0.47422921704128385,
+            "min_image_reward": -1.9118160724639892
+        },
+        {
+            "prompt": "a young asian woman with black hair wearing a sweater ",
+            "paths": [
+                "bound_image_outputs/26/4-000.jpg",
+                "bound_image_outputs/26/4-001.jpg",
+                "bound_image_outputs/26/4-002.jpg",
+                "bound_image_outputs/26/4-003.jpg"
+            ],
+            "max_face_sim": 0.8038243055343628,
+            "min_face_sim": 0.021487141028046608,
+            "max_text_sim": 0.329833984375,
+            "min_text_sim": 0.1876220703125,
+            "max_image_reward": 1.5593298971652985,
+            "min_image_reward": -1.9572882652282715
+        },
+        {
+            "prompt": "a woman sitting on a bench wearing brown pants ",
+            "paths": [
+                "bound_image_outputs/26/5-000.jpg",
+                "bound_image_outputs/26/5-001.jpg",
+                "bound_image_outputs/26/5-002.jpg",
+                "bound_image_outputs/26/5-003.jpg"
+            ],
+            "max_face_sim": 0.8038243055343628,
+            "min_face_sim": -0.049069054424762726,
+            "max_text_sim": 0.31640625,
+            "min_text_sim": 0.1915283203125,
+            "max_image_reward": -0.21798250079154968,
+            "min_image_reward": -2.1781813621521
+        }
+    ]
+}

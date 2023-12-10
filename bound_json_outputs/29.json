@@ -1,0 +1,80 @@
+{
+    "id": 29,
+    "images": [
+        {
+            "prompt": "a young asian woman with short hair posing for the camera ",
+            "paths": [
+                "bound_image_outputs/29/0-000.jpg",
+                "bound_image_outputs/29/0-001.jpg",
+                "bound_image_outputs/29/0-002.jpg",
+                "bound_image_outputs/29/0-003.jpg"
+            ],
+            "max_face_sim": 0.8327979445457458,
+            "min_face_sim": 0.038695208728313446,
+            "max_text_sim": 0.302001953125,
+            "min_text_sim": 0.2178955078125,
+            "max_image_reward": -0.15404023230075836,
+            "min_image_reward": -1.7666829228401184
+        },
+        {
+            "prompt": "a young asian woman with long hair holding a stuffed animal ",
+            "paths": [
+                "bound_image_outputs/29/1-000.jpg",
+                "bound_image_outputs/29/1-001.jpg",
+                "bound_image_outputs/29/1-002.jpg",
+                "bound_image_outputs/29/1-003.jpg"
+            ],
+            "max_face_sim": 0.8327979445457458,
+            "min_face_sim": 0.0458185188472271,
+            "max_text_sim": 0.341552734375,
+            "min_text_sim": 0.1444091796875,
+            "max_image_reward": 1.2944581657648087,
+            "min_image_reward": -2.235980224609375
+        },
+        {
+            "prompt": "a woman is sitting on a chair wearing a t - shirt with a tiger on it ",
+            "paths": [
+                "bound_image_outputs/29/2-000.jpg",
+                "bound_image_outputs/29/2-001.jpg",
+                "bound_image_outputs/29/2-002.jpg",
+                "bound_image_outputs/29/2-003.jpg"
+            ],
+            "max_face_sim": 0.8327979445457458,
+            "min_face_sim": -0.02689674124121666,
+            "max_text_sim": 0.362060546875,
+            "min_text_sim": 0.1697998046875,
+            "max_image_reward": 1.6459347903728485,
+            "min_image_reward": -2.2571359634399415
+        },
+        {
+            "prompt": "a woman holding a camera and a bouquet of flowers ",
+            "paths": [
+                "bound_image_outputs/29/4-000.jpg",
+                "bound_image_outputs/29/4-001.jpg",
+                "bound_image_outputs/29/4-002.jpg",
+                "bound_image_outputs/29/4-003.jpg"
+            ],
+            "max_face_sim": 0.8327979445457458,
+            "min_face_sim": 0.018096502870321274,
+            "max_text_sim": 0.36376953125,
+            "min_text_sim": 0.2005615234375,
+            "max_image_reward": 1.8634158968925476,
+            "min_image_reward": -2.221364688873291
+        },
+        {
+            "prompt": "an asian woman in a yellow dress posing for the camera ",
+            "paths": [
+                "bound_image_outputs/29/5-000.jpg",
+                "bound_image_outputs/29/5-001.jpg",
+                "bound_image_outputs/29/5-002.jpg",
+                "bound_image_outputs/29/5-003.jpg"
+            ],
+            "max_face_sim": 0.8327979445457458,
+            "min_face_sim": 0.02848074957728386,
+            "max_text_sim": 0.34326171875,
+            "min_text_sim": 0.2249755859375,
+            "max_image_reward": 1.909417986869812,
+            "min_image_reward": -2.2644817352294924
+        }
+    ]
+}

@@ -1,0 +1,95 @@
+{
+    "id": 15,
+    "images": [
+        {
+            "prompt": "a woman in the back seat of a car holding a bottle of sunscreen ",
+            "paths": [
+                "bound_image_outputs/15/0-000.jpg",
+                "bound_image_outputs/15/0-001.jpg",
+                "bound_image_outputs/15/0-002.jpg",
+                "bound_image_outputs/15/0-003.jpg"
+            ],
+            "max_face_sim": 0.7407565116882324,
+            "min_face_sim": 0.024641791358590126,
+            "max_text_sim": 0.3271484375,
+            "min_text_sim": 0.2015380859375,
+            "max_image_reward": 0.6485415548086166,
+            "min_image_reward": -2.1564509868621826
+        },
+        {
+            "prompt": "a young asian woman with big breasts and long hair ",
+            "paths": [
+                "bound_image_outputs/15/1-000.jpg",
+                "bound_image_outputs/15/1-001.jpg",
+                "bound_image_outputs/15/1-002.jpg",
+                "bound_image_outputs/15/1-003.jpg"
+            ],
+            "max_face_sim": 0.7407565116882324,
+            "min_face_sim": 0.013536897487938404,
+            "max_text_sim": 0.336669921875,
+            "min_text_sim": 0.273193359375,
+            "max_image_reward": 0.2760644219815731,
+            "min_image_reward": -1.6901684165000916
+        },
+        {
+            "prompt": "a woman in a white top and black shorts standing in front of a crowd ",
+            "paths": [
+                "bound_image_outputs/15/2-000.jpg",
+                "bound_image_outputs/15/2-001.jpg",
+                "bound_image_outputs/15/2-002.jpg",
+                "bound_image_outputs/15/2-003.jpg"
+            ],
+            "max_face_sim": 0.7407565116882324,
+            "min_face_sim": -0.04730691760778427,
+            "max_text_sim": 0.30517578125,
+            "min_text_sim": 0.2296142578125,
+            "max_image_reward": 1.9214551746845245,
+            "min_image_reward": -1.855192518234253
+        },
+        {
+            "prompt": "a woman eating a croissant in front of a tv screen ",
+            "paths": [
+                "bound_image_outputs/15/3-000.jpg",
+                "bound_image_outputs/15/3-001.jpg",
+                "bound_image_outputs/15/3-002.jpg",
+                "bound_image_outputs/15/3-003.jpg"
+            ],
+            "max_face_sim": 0.7407565116882324,
+            "min_face_sim": 0.014715433120727539,
+            "max_text_sim": 0.32373046875,
+            "min_text_sim": 0.201904296875,
+            "max_image_reward": 1.3294866234064102,
+            "min_image_reward": -2.1828163862228394
+        },
+        {
+            "prompt": "a woman in a white shirt making a kissy face ",
+            "paths": [
+                "bound_image_outputs/15/4-000.jpg",
+                "bound_image_outputs/15/4-001.jpg",
+                "bound_image_outputs/15/4-002.jpg",
+                "bound_image_outputs/15/4-003.jpg"
+            ],
+            "max_face_sim": 0.7407565116882324,
+            "min_face_sim": 0.07685449719429016,
+            "max_text_sim": 0.254150390625,
+            "min_text_sim": 0.2418212890625,
+            "max_image_reward": -0.07075885683298111,
+            "min_image_reward": -1.4657724499702454
+        },
+        {
+            "prompt": "an asian woman with long brown hair posing for the camera ",
+            "paths": [
+                "bound_image_outputs/15/5-000.jpg",
+                "bound_image_outputs/15/5-001.jpg",
+                "bound_image_outputs/15/5-002.jpg",
+                "bound_image_outputs/15/5-003.jpg"
+            ],
+            "max_face_sim": 0.7407565116882324,
+            "min_face_sim": 0.02121782675385475,
+            "max_text_sim": 0.2958984375,
+            "min_text_sim": 0.279052734375,
+            "max_image_reward": 0.36396336555480957,
+            "min_image_reward": -1.308140681684017
+        }
+    ]
+}

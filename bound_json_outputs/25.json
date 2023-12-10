@@ -1,0 +1,65 @@
+{
+    "id": 25,
+    "images": [
+        {
+            "prompt": "an asian woman in a striped shirt and pink lipstick ",
+            "paths": [
+                "bound_image_outputs/25/0-000.jpg",
+                "bound_image_outputs/25/0-001.jpg",
+                "bound_image_outputs/25/0-002.jpg",
+                "bound_image_outputs/25/0-003.jpg"
+            ],
+            "max_face_sim": 0.6884315609931946,
+            "min_face_sim": 0.015844574198126793,
+            "max_text_sim": 0.361328125,
+            "min_text_sim": 0.1873779296875,
+            "max_image_reward": 1.8787771165370941,
+            "min_image_reward": -2.1380492619105746
+        },
+        {
+            "prompt": "a woman sitting in a car with a cell phone in her hand ",
+            "paths": [
+                "bound_image_outputs/25/1-000.jpg",
+                "bound_image_outputs/25/1-001.jpg",
+                "bound_image_outputs/25/1-002.jpg",
+                "bound_image_outputs/25/1-003.jpg"
+            ],
+            "max_face_sim": 0.6884315609931946,
+            "min_face_sim": -0.019336586818099022,
+            "max_text_sim": 0.31005859375,
+            "min_text_sim": 0.1640625,
+            "max_image_reward": 0.9465797692537308,
+            "min_image_reward": -2.139246565955026
+        },
+        {
+            "prompt": "a woman in a floral dress drinking from a straw ",
+            "paths": [
+                "bound_image_outputs/25/2-000.jpg",
+                "bound_image_outputs/25/2-001.jpg",
+                "bound_image_outputs/25/2-002.jpg",
+                "bound_image_outputs/25/2-003.jpg"
+            ],
+            "max_face_sim": 0.6884315609931946,
+            "min_face_sim": 0.07504192739725113,
+            "max_text_sim": 0.30224609375,
+            "min_text_sim": 0.1995849609375,
+            "max_image_reward": 1.0069795101881027,
+            "min_image_reward": -2.1401863949639455
+        },
+        {
+            "prompt": "a woman standing in front of a cherry blossom tree ",
+            "paths": [
+                "bound_image_outputs/25/3-000.jpg",
+                "bound_image_outputs/25/3-001.jpg",
+                "bound_image_outputs/25/3-002.jpg",
+                "bound_image_outputs/25/3-003.jpg"
+            ],
+            "max_face_sim": 0.6884315609931946,
+            "min_face_sim": -0.015525049529969692,
+            "max_text_sim": 0.3212890625,
+            "min_text_sim": 0.192138671875,
+            "max_image_reward": 1.8454347848892212,
+            "min_image_reward": -2.2096006189073836
+        }
+    ]
+}

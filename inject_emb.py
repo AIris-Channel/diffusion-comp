@@ -1,6 +1,6 @@
 import torch
 
-model_path = 'model.pth'
+model_path = 'model_output/final.ckpt/ip_adapter.pth'
 emb_path = 'emb.pth'
 
 model_dict = torch.load(model_path)

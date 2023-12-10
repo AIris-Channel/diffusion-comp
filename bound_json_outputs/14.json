@@ -1,0 +1,95 @@
+{
+    "id": 14,
+    "images": [
+        {
+            "prompt": "a woman in a yellow sweater sitting on a couch ",
+            "paths": [
+                "bound_image_outputs/14/0-000.jpg",
+                "bound_image_outputs/14/0-001.jpg",
+                "bound_image_outputs/14/0-002.jpg",
+                "bound_image_outputs/14/0-003.jpg"
+            ],
+            "max_face_sim": 0.5679146647453308,
+            "min_face_sim": 0.055388227105140686,
+            "max_text_sim": 0.3525390625,
+            "min_text_sim": 0.205810546875,
+            "max_image_reward": 1.569784089922905,
+            "min_image_reward": -2.2717548608779907
+        },
+        {
+            "prompt": "a woman laying on a bed with a white cat ",
+            "paths": [
+                "bound_image_outputs/14/1-000.jpg",
+                "bound_image_outputs/14/1-001.jpg",
+                "bound_image_outputs/14/1-002.jpg",
+                "bound_image_outputs/14/1-003.jpg"
+            ],
+            "max_face_sim": 0.5679146647453308,
+            "min_face_sim": 0.024918511509895325,
+            "max_text_sim": 0.340576171875,
+            "min_text_sim": 0.1788330078125,
+            "max_image_reward": 1.3492236733436584,
+            "min_image_reward": -2.2431856791178384
+        },
+        {
+            "prompt": "a young woman using her cell phone in a mall ",
+            "paths": [
+                "bound_image_outputs/14/2-000.jpg",
+                "bound_image_outputs/14/2-001.jpg",
+                "bound_image_outputs/14/2-002.jpg",
+                "bound_image_outputs/14/2-003.jpg"
+            ],
+            "max_face_sim": 0.5679146647453308,
+            "min_face_sim": 0.04740935191512108,
+            "max_text_sim": 0.306396484375,
+            "min_text_sim": 0.200439453125,
+            "max_image_reward": 1.345066636800766,
+            "min_image_reward": -2.2640840212504068
+        },
+        {
+            "prompt": "an asian woman wearing a black shirt and blue tie ",
+            "paths": [
+                "bound_image_outputs/14/3-000.jpg",
+                "bound_image_outputs/14/3-001.jpg",
+                "bound_image_outputs/14/3-002.jpg",
+                "bound_image_outputs/14/3-003.jpg"
+            ],
+            "max_face_sim": 0.5679146647453308,
+            "min_face_sim": 0.012011711485683918,
+            "max_text_sim": 0.313232421875,
+            "min_text_sim": 0.23193359375,
+            "max_image_reward": 0.924093209207058,
+            "min_image_reward": -2.2638684113820395
+        },
+        {
+            "prompt": "a woman posing for a photo in front of an asian restaurant ",
+            "paths": [
+                "bound_image_outputs/14/4-000.jpg",
+                "bound_image_outputs/14/4-001.jpg",
+                "bound_image_outputs/14/4-002.jpg",
+                "bound_image_outputs/14/4-003.jpg"
+            ],
+            "max_face_sim": 0.5679146647453308,
+            "min_face_sim": 0.028491809964179993,
+            "max_text_sim": 0.3134765625,
+            "min_text_sim": 0.228759765625,
+            "max_image_reward": 1.111316904425621,
+            "min_image_reward": -2.2420751651128135
+        },
+        {
+            "prompt": "a young asian woman with short hair posing for a selfie ",
+            "paths": [
+                "bound_image_outputs/14/5-000.jpg",
+                "bound_image_outputs/14/5-001.jpg",
+                "bound_image_outputs/14/5-002.jpg",
+                "bound_image_outputs/14/5-003.jpg"
+            ],
+            "max_face_sim": 0.5679146647453308,
+            "min_face_sim": -0.015421387739479542,
+            "max_text_sim": 0.322021484375,
+            "min_text_sim": 0.259765625,
+            "max_image_reward": -0.1186290169134736,
+            "min_image_reward": -1.9159129063288372
+        }
+    ]
+}

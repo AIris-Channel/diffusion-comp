@@ -1,0 +1,65 @@
+{
+    "id": 23,
+    "images": [
+        {
+            "prompt": "an asian woman wearing a red jacket and earrings ",
+            "paths": [
+                "bound_image_outputs/23/0-000.jpg",
+                "bound_image_outputs/23/0-001.jpg",
+                "bound_image_outputs/23/0-002.jpg",
+                "bound_image_outputs/23/0-003.jpg"
+            ],
+            "max_face_sim": 0.688444972038269,
+            "min_face_sim": 0.032728616148233414,
+            "max_text_sim": 0.340576171875,
+            "min_text_sim": 0.23291015625,
+            "max_image_reward": 0.9536404609680176,
+            "min_image_reward": -1.1491898059844972
+        },
+        {
+            "prompt": "a woman taking a selfie in a bathroom ",
+            "paths": [
+                "bound_image_outputs/23/1-000.jpg",
+                "bound_image_outputs/23/1-001.jpg",
+                "bound_image_outputs/23/1-002.jpg",
+                "bound_image_outputs/23/1-003.jpg"
+            ],
+            "max_face_sim": 0.688444972038269,
+            "min_face_sim": -0.02038334123790264,
+            "max_text_sim": 0.31591796875,
+            "min_text_sim": 0.1719970703125,
+            "max_image_reward": -0.043204957619309425,
+            "min_image_reward": -2.1540740013122557
+        },
+        {
+            "prompt": "an asian woman in a striped shirt and yellow skirt ",
+            "paths": [
+                "bound_image_outputs/23/2-000.jpg",
+                "bound_image_outputs/23/2-001.jpg",
+                "bound_image_outputs/23/2-002.jpg",
+                "bound_image_outputs/23/2-003.jpg"
+            ],
+            "max_face_sim": 0.688444972038269,
+            "min_face_sim": -0.02557414211332798,
+            "max_text_sim": 0.33935546875,
+            "min_text_sim": 0.1993408203125,
+            "max_image_reward": -0.5513291358947754,
+            "min_image_reward": -2.2518642425537108
+        },
+        {
+            "prompt": "a young asian woman wearing a t - shirt with the word givenchy written on it ",
+            "paths": [
+                "bound_image_outputs/23/3-000.jpg",
+                "bound_image_outputs/23/3-001.jpg",
+                "bound_image_outputs/23/3-002.jpg",
+                "bound_image_outputs/23/3-003.jpg"
+            ],
+            "max_face_sim": 0.688444972038269,
+            "min_face_sim": 0.005460965912789106,
+            "max_text_sim": 0.40673828125,
+            "min_text_sim": 0.1915283203125,
+            "max_image_reward": 1.417903020977974,
+            "min_image_reward": -2.0234822750091555
+        }
+    ]
+}

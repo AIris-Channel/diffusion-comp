@@ -1,0 +1,95 @@
+{
+    "id": 10,
+    "images": [
+        {
+            "prompt": "a woman in a blue blouse and black skirt ",
+            "paths": [
+                "bound_image_outputs/10/0-000.jpg",
+                "bound_image_outputs/10/0-001.jpg",
+                "bound_image_outputs/10/0-002.jpg",
+                "bound_image_outputs/10/0-003.jpg"
+            ],
+            "max_face_sim": 0.7914419770240784,
+            "min_face_sim": 0.06508493423461914,
+            "max_text_sim": 0.307861328125,
+            "min_text_sim": 0.229248046875,
+            "max_image_reward": -0.04244164004921913,
+            "min_image_reward": -2.235262930393219
+        },
+        {
+            "prompt": "an asian woman sitting at a table in a restaurant ",
+            "paths": [
+                "bound_image_outputs/10/1-000.jpg",
+                "bound_image_outputs/10/1-001.jpg",
+                "bound_image_outputs/10/1-002.jpg",
+                "bound_image_outputs/10/1-003.jpg"
+            ],
+            "max_face_sim": 0.7914419770240784,
+            "min_face_sim": 0.0723116397857666,
+            "max_text_sim": 0.29638671875,
+            "min_text_sim": 0.222900390625,
+            "max_image_reward": 0.19452586770057678,
+            "min_image_reward": -2.2307464480400085
+        },
+        {
+            "prompt": "an asian woman in a black swimsuit posing in the water ",
+            "paths": [
+                "bound_image_outputs/10/2-000.jpg",
+                "bound_image_outputs/10/2-001.jpg",
+                "bound_image_outputs/10/2-002.jpg",
+                "bound_image_outputs/10/2-003.jpg"
+            ],
+            "max_face_sim": 0.7914419770240784,
+            "min_face_sim": -0.0018522916361689568,
+            "max_text_sim": 0.3603515625,
+            "min_text_sim": 0.1998291015625,
+            "max_image_reward": 1.786342978477478,
+            "min_image_reward": -2.2501892149448395
+        },
+        {
+            "prompt": "a woman sitting at a table with three trays of food ",
+            "paths": [
+                "bound_image_outputs/10/3-000.jpg",
+                "bound_image_outputs/10/3-001.jpg",
+                "bound_image_outputs/10/3-002.jpg",
+                "bound_image_outputs/10/3-003.jpg"
+            ],
+            "max_face_sim": 0.7914419770240784,
+            "min_face_sim": -0.01165388710796833,
+            "max_text_sim": 0.2978515625,
+            "min_text_sim": 0.190185546875,
+            "max_image_reward": -0.17794488370418549,
+            "min_image_reward": -2.2201924920082092
+        },
+        {
+            "prompt": "an asian woman wearing a necklace and earphones ",
+            "paths": [
+                "bound_image_outputs/10/4-000.jpg",
+                "bound_image_outputs/10/4-001.jpg",
+                "bound_image_outputs/10/4-002.jpg",
+                "bound_image_outputs/10/4-003.jpg"
+            ],
+            "max_face_sim": 0.7914419770240784,
+            "min_face_sim": -0.023369168862700462,
+            "max_text_sim": 0.335205078125,
+            "min_text_sim": 0.24755859375,
+            "max_image_reward": 0.4872847981750965,
+            "min_image_reward": -2.0956083089113235
+        },
+        {
+            "prompt": "a woman taking a selfie in front of a mirror ",
+            "paths": [
+                "bound_image_outputs/10/5-000.jpg",
+                "bound_image_outputs/10/5-001.jpg",
+                "bound_image_outputs/10/5-002.jpg",
+                "bound_image_outputs/10/5-003.jpg"
+            ],
+            "max_face_sim": 0.7914419770240784,
+            "min_face_sim": 0.019303590059280396,
+            "max_text_sim": 0.296875,
+            "min_text_sim": 0.217529296875,
+            "max_image_reward": 0.7314224392175674,
+            "min_image_reward": -2.0375064313411713
+        }
+    ]
+}

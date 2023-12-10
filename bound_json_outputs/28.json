@@ -1,0 +1,65 @@
+{
+    "id": 28,
+    "images": [
+        {
+            "prompt": "a woman in a graduation cap and gown posing for the camera ",
+            "paths": [
+                "bound_image_outputs/28/0-000.jpg",
+                "bound_image_outputs/28/0-001.jpg",
+                "bound_image_outputs/28/0-002.jpg",
+                "bound_image_outputs/28/0-003.jpg"
+            ],
+            "max_face_sim": 0.6736173629760742,
+            "min_face_sim": 0.006892678327858448,
+            "max_text_sim": 0.275390625,
+            "min_text_sim": 0.198974609375,
+            "max_image_reward": 1.639739215373993,
+            "min_image_reward": -2.1929067373275757
+        },
+        {
+            "prompt": "a woman sitting at a table with a plate of food ",
+            "paths": [
+                "bound_image_outputs/28/1-000.jpg",
+                "bound_image_outputs/28/1-001.jpg",
+                "bound_image_outputs/28/1-002.jpg",
+                "bound_image_outputs/28/1-003.jpg"
+            ],
+            "max_face_sim": 0.6736173629760742,
+            "min_face_sim": -0.009087999351322651,
+            "max_text_sim": 0.2998046875,
+            "min_text_sim": 0.184814453125,
+            "max_image_reward": 1.5040920078754425,
+            "min_image_reward": -2.2177494764328003
+        },
+        {
+            "prompt": "a woman with long hair covering her face with a tissue ",
+            "paths": [
+                "bound_image_outputs/28/2-000.jpg",
+                "bound_image_outputs/28/2-001.jpg",
+                "bound_image_outputs/28/2-002.jpg",
+                "bound_image_outputs/28/2-003.jpg"
+            ],
+            "max_face_sim": 0.6736173629760742,
+            "min_face_sim": 0.014225717633962631,
+            "max_text_sim": 0.27880859375,
+            "min_text_sim": 0.2166748046875,
+            "max_image_reward": 1.7661092579364777,
+            "min_image_reward": -1.5242284834384918
+        },
+        {
+            "prompt": "a woman wearing a plaid shirt and blue nail polish ",
+            "paths": [
+                "bound_image_outputs/28/3-000.jpg",
+                "bound_image_outputs/28/3-001.jpg",
+                "bound_image_outputs/28/3-002.jpg",
+                "bound_image_outputs/28/3-003.jpg"
+            ],
+            "max_face_sim": 0.6736173629760742,
+            "min_face_sim": -0.028465338051319122,
+            "max_text_sim": 0.33544921875,
+            "min_text_sim": 0.19482421875,
+            "max_image_reward": -0.5010773465037346,
+            "min_image_reward": -2.230848342180252
+        }
+    ]
+}

@@ -1,0 +1,95 @@
+{
+    "id": 30,
+    "images": [
+        {
+            "prompt": "a woman with a cup of coffee in front of her ",
+            "paths": [
+                "bound_image_outputs/30/0-000.jpg",
+                "bound_image_outputs/30/0-001.jpg",
+                "bound_image_outputs/30/0-002.jpg",
+                "bound_image_outputs/30/0-003.jpg"
+            ],
+            "max_face_sim": 0.6803126931190491,
+            "min_face_sim": -0.003717048792168498,
+            "max_text_sim": 0.31982421875,
+            "min_text_sim": 0.236083984375,
+            "max_image_reward": 0.9888677448034286,
+            "min_image_reward": -2.159880624877082
+        },
+        {
+            "prompt": "a young woman making the peace sign while sitting on a bed ",
+            "paths": [
+                "bound_image_outputs/30/1-000.jpg",
+                "bound_image_outputs/30/1-001.jpg",
+                "bound_image_outputs/30/1-002.jpg",
+                "bound_image_outputs/30/1-003.jpg"
+            ],
+            "max_face_sim": 0.6803126931190491,
+            "min_face_sim": 0.005734324920922518,
+            "max_text_sim": 0.2802734375,
+            "min_text_sim": 0.2333984375,
+            "max_image_reward": -0.6913793981075287,
+            "min_image_reward": -2.2323927879333496
+        },
+        {
+            "prompt": "an asian woman with flowers in her hair ",
+            "paths": [
+                "bound_image_outputs/30/2-000.jpg",
+                "bound_image_outputs/30/2-001.jpg",
+                "bound_image_outputs/30/2-002.jpg",
+                "bound_image_outputs/30/2-003.jpg"
+            ],
+            "max_face_sim": 0.6803126931190491,
+            "min_face_sim": -0.014509922824800014,
+            "max_text_sim": 0.3173828125,
+            "min_text_sim": 0.251708984375,
+            "max_image_reward": 1.7476536929607391,
+            "min_image_reward": -1.613566666841507
+        },
+        {
+            "prompt": "a woman sitting at a table with a drink in her hand ",
+            "paths": [
+                "bound_image_outputs/30/3-000.jpg",
+                "bound_image_outputs/30/3-001.jpg",
+                "bound_image_outputs/30/3-002.jpg",
+                "bound_image_outputs/30/3-003.jpg"
+            ],
+            "max_face_sim": 0.6803126931190491,
+            "min_face_sim": 0.03383113071322441,
+            "max_text_sim": 0.293701171875,
+            "min_text_sim": 0.214111328125,
+            "max_image_reward": 1.5741339325904846,
+            "min_image_reward": -2.18794486257765
+        },
+        {
+            "prompt": "a woman in a denim dress standing in front of a wall ",
+            "paths": [
+                "bound_image_outputs/30/4-000.jpg",
+                "bound_image_outputs/30/4-001.jpg",
+                "bound_image_outputs/30/4-002.jpg",
+                "bound_image_outputs/30/4-003.jpg"
+            ],
+            "max_face_sim": 0.6803126931190491,
+            "min_face_sim": 0.09777402132749557,
+            "max_text_sim": 0.325439453125,
+            "min_text_sim": 0.2230224609375,
+            "max_image_reward": 1.4398342967033386,
+            "min_image_reward": -2.258922735850016
+        },
+        {
+            "prompt": "an asian woman in a white dress taking a selfie ",
+            "paths": [
+                "bound_image_outputs/30/5-000.jpg",
+                "bound_image_outputs/30/5-001.jpg",
+                "bound_image_outputs/30/5-002.jpg",
+                "bound_image_outputs/30/5-003.jpg"
+            ],
+            "max_face_sim": 0.6803126931190491,
+            "min_face_sim": -0.0038278307765722275,
+            "max_text_sim": 0.3583984375,
+            "min_text_sim": 0.251953125,
+            "max_image_reward": 1.2737204283475876,
+            "min_image_reward": -2.137116379208035
+        }
+    ]
+}

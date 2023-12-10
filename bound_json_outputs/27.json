@@ -1,0 +1,80 @@
+{
+    "id": 27,
+    "images": [
+        {
+            "prompt": "an asian woman holding an umbrella while sitting on a chair ",
+            "paths": [
+                "bound_image_outputs/27/0-000.jpg",
+                "bound_image_outputs/27/0-001.jpg",
+                "bound_image_outputs/27/0-002.jpg",
+                "bound_image_outputs/27/0-003.jpg"
+            ],
+            "max_face_sim": 0.6292566657066345,
+            "min_face_sim": -0.0025952751748263836,
+            "max_text_sim": 0.3408203125,
+            "min_text_sim": 0.2369384765625,
+            "max_image_reward": -0.04418797791004181,
+            "min_image_reward": -2.105032046635946
+        },
+        {
+            "prompt": "a woman in a white sweater is standing in front of a counter ",
+            "paths": [
+                "bound_image_outputs/27/1-000.jpg",
+                "bound_image_outputs/27/1-001.jpg",
+                "bound_image_outputs/27/1-002.jpg",
+                "bound_image_outputs/27/1-003.jpg"
+            ],
+            "max_face_sim": 0.6292566657066345,
+            "min_face_sim": 0.01773369498550892,
+            "max_text_sim": 0.3154296875,
+            "min_text_sim": 0.2010498046875,
+            "max_image_reward": 1.5124244689941406,
+            "min_image_reward": -2.25824154747857
+        },
+        {
+            "prompt": "an asian woman in a pink blazer posing for the camera ",
+            "paths": [
+                "bound_image_outputs/27/2-000.jpg",
+                "bound_image_outputs/27/2-001.jpg",
+                "bound_image_outputs/27/2-002.jpg",
+                "bound_image_outputs/27/2-003.jpg"
+            ],
+            "max_face_sim": 0.6292566657066345,
+            "min_face_sim": 0.05986239016056061,
+            "max_text_sim": 0.34228515625,
+            "min_text_sim": 0.1964111328125,
+            "max_image_reward": 1.371791124343872,
+            "min_image_reward": -2.259800248675876
+        },
+        {
+            "prompt": "a woman sitting on a couch looking at her cell phone ",
+            "paths": [
+                "bound_image_outputs/27/3-000.jpg",
+                "bound_image_outputs/27/3-001.jpg",
+                "bound_image_outputs/27/3-002.jpg",
+                "bound_image_outputs/27/3-003.jpg"
+            ],
+            "max_face_sim": 0.6292566657066345,
+            "min_face_sim": 0.023452548310160637,
+            "max_text_sim": 0.31640625,
+            "min_text_sim": 0.19970703125,
+            "max_image_reward": 0.7677555903792381,
+            "min_image_reward": -2.204219924079047
+        },
+        {
+            "prompt": "an asian woman in a black dress posing for the camera ",
+            "paths": [
+                "bound_image_outputs/27/4-000.jpg",
+                "bound_image_outputs/27/4-001.jpg",
+                "bound_image_outputs/27/4-002.jpg",
+                "bound_image_outputs/27/4-003.jpg"
+            ],
+            "max_face_sim": 0.6292566657066345,
+            "min_face_sim": 0.01295642089098692,
+            "max_text_sim": 0.326416015625,
+            "min_text_sim": 0.232421875,
+            "max_image_reward": 1.0032662488520145,
+            "min_image_reward": -2.242565155029297
+        }
+    ]
+}

@@ -1,0 +1,80 @@
+{
+    "id": 22,
+    "images": [
+        {
+            "prompt": "an asian woman holding a flower in her hand ",
+            "paths": [
+                "bound_image_outputs/22/0-000.jpg",
+                "bound_image_outputs/22/0-001.jpg",
+                "bound_image_outputs/22/0-002.jpg",
+                "bound_image_outputs/22/0-003.jpg"
+            ],
+            "max_face_sim": 0.7611900568008423,
+            "min_face_sim": 0.0420524924993515,
+            "max_text_sim": 0.333740234375,
+            "min_text_sim": 0.27099609375,
+            "max_image_reward": 1.7774785161018372,
+            "min_image_reward": -0.5624231447776159
+        },
+        {
+            "prompt": "a woman wearing a black top and earrings ",
+            "paths": [
+                "bound_image_outputs/22/1-000.jpg",
+                "bound_image_outputs/22/1-001.jpg",
+                "bound_image_outputs/22/1-002.jpg",
+                "bound_image_outputs/22/1-003.jpg"
+            ],
+            "max_face_sim": 0.7611900568008423,
+            "min_face_sim": -0.0775919109582901,
+            "max_text_sim": 0.30908203125,
+            "min_text_sim": 0.225830078125,
+            "max_image_reward": 0.5297959595918655,
+            "min_image_reward": -2.262552181879679
+        },
+        {
+            "prompt": "a woman smiling at the camera in front of a wine rack ",
+            "paths": [
+                "bound_image_outputs/22/2-000.jpg",
+                "bound_image_outputs/22/2-001.jpg",
+                "bound_image_outputs/22/2-002.jpg",
+                "bound_image_outputs/22/2-003.jpg"
+            ],
+            "max_face_sim": 0.7611900568008423,
+            "min_face_sim": -0.001346713863313198,
+            "max_text_sim": 0.3359375,
+            "min_text_sim": 0.2392578125,
+            "max_image_reward": 1.7510685324668884,
+            "min_image_reward": -2.24549933274587
+        },
+        {
+            "prompt": "a woman sitting on top of a child in a chair ",
+            "paths": [
+                "bound_image_outputs/22/3-000.jpg",
+                "bound_image_outputs/22/3-001.jpg",
+                "bound_image_outputs/22/3-002.jpg",
+                "bound_image_outputs/22/3-003.jpg"
+            ],
+            "max_face_sim": 0.7611900568008423,
+            "min_face_sim": 0.04371877387166023,
+            "max_text_sim": 0.288330078125,
+            "min_text_sim": 0.206787109375,
+            "max_image_reward": -0.22342978417873383,
+            "min_image_reward": -2.2346745332082114
+        },
+        {
+            "prompt": "a close up of a woman with long hair ",
+            "paths": [
+                "bound_image_outputs/22/4-000.jpg",
+                "bound_image_outputs/22/4-001.jpg",
+                "bound_image_outputs/22/4-002.jpg",
+                "bound_image_outputs/22/4-003.jpg"
+            ],
+            "max_face_sim": 0.7611900568008423,
+            "min_face_sim": 0.020222267135977745,
+            "max_text_sim": 0.26708984375,
+            "min_text_sim": 0.19482421875,
+            "max_image_reward": 0.6617507413029671,
+            "min_image_reward": -2.234678030014038
+        }
+    ]
+}

@@ -1,0 +1,65 @@
+{
+    "id": 8,
+    "images": [
+        {
+            "prompt": "an asian woman in a white sweater posing for the camera ",
+            "paths": [
+                "bound_image_outputs/8/0-000.jpg",
+                "bound_image_outputs/8/0-001.jpg",
+                "bound_image_outputs/8/0-002.jpg",
+                "bound_image_outputs/8/0-003.jpg"
+            ],
+            "max_face_sim": 0.628372073173523,
+            "min_face_sim": -0.011314298957586288,
+            "max_text_sim": 0.327392578125,
+            "min_text_sim": 0.252197265625,
+            "max_image_reward": 1.1168365627527237,
+            "min_image_reward": -2.235005706548691
+        },
+        {
+            "prompt": "a woman standing in front of a wall with a sign that says happy birthday ",
+            "paths": [
+                "bound_image_outputs/8/1-000.jpg",
+                "bound_image_outputs/8/1-001.jpg",
+                "bound_image_outputs/8/1-002.jpg",
+                "bound_image_outputs/8/1-003.jpg"
+            ],
+            "max_face_sim": 0.628372073173523,
+            "min_face_sim": -0.002510625636205077,
+            "max_text_sim": 0.3466796875,
+            "min_text_sim": 0.1973876953125,
+            "max_image_reward": 1.2887897789478302,
+            "min_image_reward": -2.1159066259860992
+        },
+        {
+            "prompt": "a woman is holding a coconut in her hand ",
+            "paths": [
+                "bound_image_outputs/8/2-000.jpg",
+                "bound_image_outputs/8/2-001.jpg",
+                "bound_image_outputs/8/2-002.jpg",
+                "bound_image_outputs/8/2-003.jpg"
+            ],
+            "max_face_sim": 0.628372073173523,
+            "min_face_sim": 0.02416348084807396,
+            "max_text_sim": 0.34716796875,
+            "min_text_sim": 0.2369384765625,
+            "max_image_reward": 1.583627700805664,
+            "min_image_reward": -2.0605910420417786
+        },
+        {
+            "prompt": "a woman in a black top sitting on a couch ",
+            "paths": [
+                "bound_image_outputs/8/3-000.jpg",
+                "bound_image_outputs/8/3-001.jpg",
+                "bound_image_outputs/8/3-002.jpg",
+                "bound_image_outputs/8/3-003.jpg"
+            ],
+            "max_face_sim": 0.628372073173523,
+            "min_face_sim": -0.046269237995147705,
+            "max_text_sim": 0.2919921875,
+            "min_text_sim": 0.1927490234375,
+            "max_image_reward": -0.1953027844429016,
+            "min_image_reward": -2.2529532611370087
+        }
+    ]
+}

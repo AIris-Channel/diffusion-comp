@@ -1,0 +1,65 @@
+{
+    "id": 24,
+    "images": [
+        {
+            "prompt": "a young asian woman with a necklace on her neck ",
+            "paths": [
+                "bound_image_outputs/24/0-000.jpg",
+                "bound_image_outputs/24/0-001.jpg",
+                "bound_image_outputs/24/0-002.jpg",
+                "bound_image_outputs/24/0-003.jpg"
+            ],
+            "max_face_sim": 0.6455967426300049,
+            "min_face_sim": 0.020726900547742844,
+            "max_text_sim": 0.33935546875,
+            "min_text_sim": 0.244140625,
+            "max_image_reward": 1.213690847158432,
+            "min_image_reward": -1.9360146352222987
+        },
+        {
+            "prompt": "a woman wearing a t - shirt with peppa pig on it ",
+            "paths": [
+                "bound_image_outputs/24/1-000.jpg",
+                "bound_image_outputs/24/1-001.jpg",
+                "bound_image_outputs/24/1-002.jpg",
+                "bound_image_outputs/24/1-003.jpg"
+            ],
+            "max_face_sim": 0.6455967426300049,
+            "min_face_sim": 0.02439410425722599,
+            "max_text_sim": 0.3623046875,
+            "min_text_sim": 0.206787109375,
+            "max_image_reward": 1.0363565534353256,
+            "min_image_reward": -2.1481586694717407
+        },
+        {
+            "prompt": "a woman with her hand on her chin posing for a photo ",
+            "paths": [
+                "bound_image_outputs/24/2-000.jpg",
+                "bound_image_outputs/24/2-001.jpg",
+                "bound_image_outputs/24/2-002.jpg",
+                "bound_image_outputs/24/2-003.jpg"
+            ],
+            "max_face_sim": 0.6455967426300049,
+            "min_face_sim": 0.0022341010626405478,
+            "max_text_sim": 0.25341796875,
+            "min_text_sim": 0.25830078125,
+            "max_image_reward": -0.17933903634548187,
+            "min_image_reward": -1.093284782554422
+        },
+        {
+            "prompt": "a woman holding up a cup of tea with the words king club written on it ",
+            "paths": [
+                "bound_image_outputs/24/3-000.jpg",
+                "bound_image_outputs/24/3-001.jpg",
+                "bound_image_outputs/24/3-002.jpg",
+                "bound_image_outputs/24/3-003.jpg"
+            ],
+            "max_face_sim": 0.6455967426300049,
+            "min_face_sim": -0.035737793892621994,
+            "max_text_sim": 0.32568359375,
+            "min_text_sim": 0.2125244140625,
+            "max_image_reward": 0.3781631365418434,
+            "min_image_reward": -2.1626684835978915
+        }
+    ]
+}

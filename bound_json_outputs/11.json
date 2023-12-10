@@ -1,0 +1,65 @@
+{
+    "id": 11,
+    "images": [
+        {
+            "prompt": "a young asian woman wearing a black top and earphones ",
+            "paths": [
+                "bound_image_outputs/11/0-000.jpg",
+                "bound_image_outputs/11/0-001.jpg",
+                "bound_image_outputs/11/0-002.jpg",
+                "bound_image_outputs/11/0-003.jpg"
+            ],
+            "max_face_sim": 0.6217460632324219,
+            "min_face_sim": 0.045360416173934937,
+            "max_text_sim": 0.32861328125,
+            "min_text_sim": 0.228271484375,
+            "max_image_reward": 1.2231747508049011,
+            "min_image_reward": -2.219774603843689
+        },
+        {
+            "prompt": "a woman in a pink vest sitting in a car ",
+            "paths": [
+                "bound_image_outputs/11/1-000.jpg",
+                "bound_image_outputs/11/1-001.jpg",
+                "bound_image_outputs/11/1-002.jpg",
+                "bound_image_outputs/11/1-003.jpg"
+            ],
+            "max_face_sim": 0.6217460632324219,
+            "min_face_sim": -0.020707599818706512,
+            "max_text_sim": 0.344970703125,
+            "min_text_sim": 0.203857421875,
+            "max_image_reward": 1.8135111927986145,
+            "min_image_reward": -2.1341486275196075
+        },
+        {
+            "prompt": "a young asian woman sitting on a couch with a pillow in front of her ",
+            "paths": [
+                "bound_image_outputs/11/2-000.jpg",
+                "bound_image_outputs/11/2-001.jpg",
+                "bound_image_outputs/11/2-002.jpg",
+                "bound_image_outputs/11/2-003.jpg"
+            ],
+            "max_face_sim": 0.6217460632324219,
+            "min_face_sim": 0.051376547664403915,
+            "max_text_sim": 0.32666015625,
+            "min_text_sim": 0.23828125,
+            "max_image_reward": 0.5610466003417969,
+            "min_image_reward": -2.215748369693756
+        },
+        {
+            "prompt": "a woman in jeans and a leather jacket taking a selfie ",
+            "paths": [
+                "bound_image_outputs/11/3-000.jpg",
+                "bound_image_outputs/11/3-001.jpg",
+                "bound_image_outputs/11/3-002.jpg",
+                "bound_image_outputs/11/3-003.jpg"
+            ],
+            "max_face_sim": 0.6217460632324219,
+            "min_face_sim": 0.051327962428331375,
+            "max_text_sim": 0.333251953125,
+            "min_text_sim": 0.18505859375,
+            "max_image_reward": 0.8569270074367523,
+            "min_image_reward": -2.2465952932834625
+        }
+    ]
+}

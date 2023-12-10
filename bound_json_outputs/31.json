@@ -1,0 +1,80 @@
+{
+    "id": 31,
+    "images": [
+        {
+            "prompt": "a woman with long hair posing in front of a plant ",
+            "paths": [
+                "bound_image_outputs/31/0-000.jpg",
+                "bound_image_outputs/31/0-001.jpg",
+                "bound_image_outputs/31/0-002.jpg",
+                "bound_image_outputs/31/0-003.jpg"
+            ],
+            "max_face_sim": 0.6253297924995422,
+            "min_face_sim": 0.041535668075084686,
+            "max_text_sim": 0.274658203125,
+            "min_text_sim": 0.2313232421875,
+            "max_image_reward": 1.3128914162516594,
+            "min_image_reward": -1.973473651068551
+        },
+        {
+            "prompt": "a close up of a woman looking at the camera ",
+            "paths": [
+                "bound_image_outputs/31/1-000.jpg",
+                "bound_image_outputs/31/1-001.jpg",
+                "bound_image_outputs/31/1-002.jpg",
+                "bound_image_outputs/31/1-003.jpg"
+            ],
+            "max_face_sim": 0.6253297924995422,
+            "min_face_sim": 0.008074557408690453,
+            "max_text_sim": 0.274658203125,
+            "min_text_sim": 0.2303466796875,
+            "max_image_reward": 0.6797094792127609,
+            "min_image_reward": -1.91327588898795
+        },
+        {
+            "prompt": "an asian woman in a white blazer and black shirt ",
+            "paths": [
+                "bound_image_outputs/31/2-000.jpg",
+                "bound_image_outputs/31/2-001.jpg",
+                "bound_image_outputs/31/2-002.jpg",
+                "bound_image_outputs/31/2-003.jpg"
+            ],
+            "max_face_sim": 0.6253297924995422,
+            "min_face_sim": 0.08985400944948196,
+            "max_text_sim": 0.320556640625,
+            "min_text_sim": 0.2161865234375,
+            "max_image_reward": -0.5416602790355682,
+            "min_image_reward": -2.24155524798802
+        },
+        {
+            "prompt": "a woman wearing a dress with reindeer antlers on her head ",
+            "paths": [
+                "bound_image_outputs/31/3-000.jpg",
+                "bound_image_outputs/31/3-001.jpg",
+                "bound_image_outputs/31/3-002.jpg",
+                "bound_image_outputs/31/3-003.jpg"
+            ],
+            "max_face_sim": 0.6253297924995422,
+            "min_face_sim": 0.052670568227767944,
+            "max_text_sim": 0.32763671875,
+            "min_text_sim": 0.247802734375,
+            "max_image_reward": 1.318010182119906,
+            "min_image_reward": -1.4628189631870814
+        },
+        {
+            "prompt": "a woman wearing a hat and sunglasses in a store ",
+            "paths": [
+                "bound_image_outputs/31/4-000.jpg",
+                "bound_image_outputs/31/4-001.jpg",
+                "bound_image_outputs/31/4-002.jpg",
+                "bound_image_outputs/31/4-003.jpg"
+            ],
+            "max_face_sim": 0.6253297924995422,
+            "min_face_sim": 0.050648707896471024,
+            "max_text_sim": 0.35205078125,
+            "min_text_sim": 0.1885986328125,
+            "max_image_reward": 1.1527615785598755,
+            "min_image_reward": -2.196429933820452
+        }
+    ]
+}

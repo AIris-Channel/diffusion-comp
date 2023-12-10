@@ -1,0 +1,80 @@
+{
+    "id": 6,
+    "images": [
+        {
+            "prompt": "a beautiful asian woman posing for the camera ",
+            "paths": [
+                "bound_image_outputs/6/0-000.jpg",
+                "bound_image_outputs/6/0-001.jpg",
+                "bound_image_outputs/6/0-002.jpg",
+                "bound_image_outputs/6/0-003.jpg"
+            ],
+            "max_face_sim": 0.8114228248596191,
+            "min_face_sim": -0.003498123725876212,
+            "max_text_sim": 0.29296875,
+            "min_text_sim": 0.2064208984375,
+            "max_image_reward": 0.18050735536962748,
+            "min_image_reward": -1.1735250403483708
+        },
+        {
+            "prompt": "a young asian woman in a black dress with a strawberry on her chest ",
+            "paths": [
+                "bound_image_outputs/6/1-000.jpg",
+                "bound_image_outputs/6/1-001.jpg",
+                "bound_image_outputs/6/1-002.jpg",
+                "bound_image_outputs/6/1-003.jpg"
+            ],
+            "max_face_sim": 0.8114228248596191,
+            "min_face_sim": 0.053344354033470154,
+            "max_text_sim": 0.373779296875,
+            "min_text_sim": 0.1873779296875,
+            "max_image_reward": 1.161343589425087,
+            "min_image_reward": -2.05111696322759
+        },
+        {
+            "prompt": "a woman wearing a plaid shirt sitting in a restaurant ",
+            "paths": [
+                "bound_image_outputs/6/2-000.jpg",
+                "bound_image_outputs/6/2-001.jpg",
+                "bound_image_outputs/6/2-002.jpg",
+                "bound_image_outputs/6/2-003.jpg"
+            ],
+            "max_face_sim": 0.8114228248596191,
+            "min_face_sim": -0.02338782139122486,
+            "max_text_sim": 0.2939453125,
+            "min_text_sim": 0.164794921875,
+            "max_image_reward": 0.5490638613700867,
+            "min_image_reward": -2.264387925465902
+        },
+        {
+            "prompt": "a woman taking a picture of herself with her cell phone ",
+            "paths": [
+                "bound_image_outputs/6/3-000.jpg",
+                "bound_image_outputs/6/3-001.jpg",
+                "bound_image_outputs/6/3-002.jpg",
+                "bound_image_outputs/6/3-003.jpg"
+            ],
+            "max_face_sim": 0.8114228248596191,
+            "min_face_sim": -0.05331403389573097,
+            "max_text_sim": 0.2705078125,
+            "min_text_sim": 0.18359375,
+            "max_image_reward": -0.7558337226510048,
+            "min_image_reward": -1.880543867746989
+        },
+        {
+            "prompt": "a smiling woman in a blue shirt standing in front of plants ",
+            "paths": [
+                "bound_image_outputs/6/4-000.jpg",
+                "bound_image_outputs/6/4-001.jpg",
+                "bound_image_outputs/6/4-002.jpg",
+                "bound_image_outputs/6/4-003.jpg"
+            ],
+            "max_face_sim": 0.8114228248596191,
+            "min_face_sim": 0.05412271246314049,
+            "max_text_sim": 0.294677734375,
+            "min_text_sim": 0.10113525390625,
+            "max_image_reward": 1.9495477378368378,
+            "min_image_reward": -2.273471474647522
+        }
+    ]
+}

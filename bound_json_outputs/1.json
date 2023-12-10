@@ -1,0 +1,35 @@
+{
+    "id": 1,
+    "images": [
+        {
+            "prompt": "A man is standing in front of the Custom House, posing for a photo ",
+            "paths": [
+                "bound_image_outputs/1/0-000.jpg",
+                "bound_image_outputs/1/0-001.jpg",
+                "bound_image_outputs/1/0-002.jpg",
+                "bound_image_outputs/1/0-003.jpg"
+            ],
+            "max_face_sim": 0.6816495060920715,
+            "min_face_sim": -0.01292511634528637,
+            "max_text_sim": 0.268310546875,
+            "min_text_sim": 0.181640625,
+            "max_image_reward": 1.2187464833259583,
+            "min_image_reward": -2.0546421855688095
+        },
+        {
+            "prompt": "A man wearing a black suit and red bow tie, standing confidently for a photo ",
+            "paths": [
+                "bound_image_outputs/1/1-000.jpg",
+                "bound_image_outputs/1/1-001.jpg",
+                "bound_image_outputs/1/1-002.jpg",
+                "bound_image_outputs/1/1-003.jpg"
+            ],
+            "max_face_sim": 0.6816495060920715,
+            "min_face_sim": 0.0030778110958635807,
+            "max_text_sim": 0.271728515625,
+            "min_text_sim": 0.185546875,
+            "max_image_reward": 0.010092318058013916,
+            "min_image_reward": -2.2467318177223206
+        }
+    ]
+}

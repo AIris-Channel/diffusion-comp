@@ -1,0 +1,65 @@
+{
+    "id": 7,
+    "images": [
+        {
+            "prompt": "a young woman holding a stuffed doll in front of her ",
+            "paths": [
+                "bound_image_outputs/7/0-000.jpg",
+                "bound_image_outputs/7/0-001.jpg",
+                "bound_image_outputs/7/0-002.jpg",
+                "bound_image_outputs/7/0-003.jpg"
+            ],
+            "max_face_sim": 0.8021103143692017,
+            "min_face_sim": -0.005111734848469496,
+            "max_text_sim": 0.2939453125,
+            "min_text_sim": 0.21728515625,
+            "max_image_reward": 0.715191000374034,
+            "min_image_reward": -2.171691417694092
+        },
+        {
+            "prompt": "a woman sitting at a table with a plate of food ",
+            "paths": [
+                "bound_image_outputs/7/1-000.jpg",
+                "bound_image_outputs/7/1-001.jpg",
+                "bound_image_outputs/7/1-002.jpg",
+                "bound_image_outputs/7/1-003.jpg"
+            ],
+            "max_face_sim": 0.8021103143692017,
+            "min_face_sim": -0.01342123094946146,
+            "max_text_sim": 0.306640625,
+            "min_text_sim": 0.1954345703125,
+            "max_image_reward": 0.10644308477640152,
+            "min_image_reward": -2.2526994546254477
+        },
+        {
+            "prompt": "a woman in jeans and an off the shoulder sweater ",
+            "paths": [
+                "bound_image_outputs/7/2-000.jpg",
+                "bound_image_outputs/7/2-001.jpg",
+                "bound_image_outputs/7/2-002.jpg",
+                "bound_image_outputs/7/2-003.jpg"
+            ],
+            "max_face_sim": 0.8021103143692017,
+            "min_face_sim": 0.030424760654568672,
+            "max_text_sim": 0.34326171875,
+            "min_text_sim": 0.2445068359375,
+            "max_image_reward": 1.1219986081123352,
+            "min_image_reward": -2.19605815410614
+        },
+        {
+            "prompt": "a woman in a red sweater posing for a picture ",
+            "paths": [
+                "bound_image_outputs/7/3-000.jpg",
+                "bound_image_outputs/7/3-001.jpg",
+                "bound_image_outputs/7/3-002.jpg",
+                "bound_image_outputs/7/3-003.jpg"
+            ],
+            "max_face_sim": 0.8021103143692017,
+            "min_face_sim": -0.008459134958684444,
+            "max_text_sim": 0.334228515625,
+            "min_text_sim": 0.247802734375,
+            "max_image_reward": 1.4488650262355804,
+            "min_image_reward": -2.2482767899831138
+        }
+    ]
+}

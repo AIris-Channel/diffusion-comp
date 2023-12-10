@@ -1,0 +1,65 @@
+{
+    "id": 9,
+    "images": [
+        {
+            "prompt": "a woman with short hair sitting on a bench ",
+            "paths": [
+                "bound_image_outputs/9/0-000.jpg",
+                "bound_image_outputs/9/0-001.jpg",
+                "bound_image_outputs/9/0-002.jpg",
+                "bound_image_outputs/9/0-003.jpg"
+            ],
+            "max_face_sim": 0.7986697554588318,
+            "min_face_sim": 0.027640055865049362,
+            "max_text_sim": 0.293701171875,
+            "min_text_sim": 0.19482421875,
+            "max_image_reward": 0.603960373904556,
+            "min_image_reward": -2.198519563674927
+        },
+        {
+            "prompt": "a woman with long brown hair and a black t - shirt ",
+            "paths": [
+                "bound_image_outputs/9/1-000.jpg",
+                "bound_image_outputs/9/1-001.jpg",
+                "bound_image_outputs/9/1-002.jpg",
+                "bound_image_outputs/9/1-003.jpg"
+            ],
+            "max_face_sim": 0.7986697554588318,
+            "min_face_sim": -0.016181115061044693,
+            "max_text_sim": 0.28515625,
+            "min_text_sim": 0.1956787109375,
+            "max_image_reward": 0.7801381051540375,
+            "min_image_reward": -1.82930908203125
+        },
+        {
+            "prompt": "a woman in a black leather jacket and pink shirt ",
+            "paths": [
+                "bound_image_outputs/9/2-000.jpg",
+                "bound_image_outputs/9/2-001.jpg",
+                "bound_image_outputs/9/2-002.jpg",
+                "bound_image_outputs/9/2-003.jpg"
+            ],
+            "max_face_sim": 0.7986697554588318,
+            "min_face_sim": 0.0027084038592875004,
+            "max_text_sim": 0.34912109375,
+            "min_text_sim": 0.151123046875,
+            "max_image_reward": 1.8453607857227325,
+            "min_image_reward": -2.245904016494751
+        },
+        {
+            "prompt": "an asian woman in a red swimsuit sitting on a bench ",
+            "paths": [
+                "bound_image_outputs/9/3-000.jpg",
+                "bound_image_outputs/9/3-001.jpg",
+                "bound_image_outputs/9/3-002.jpg",
+                "bound_image_outputs/9/3-003.jpg"
+            ],
+            "max_face_sim": 0.7986697554588318,
+            "min_face_sim": 0.0034979721531271935,
+            "max_text_sim": 0.35595703125,
+            "min_text_sim": 0.1580810546875,
+            "max_image_reward": 0.5503558982163668,
+            "min_image_reward": -2.2230650901794435
+        }
+    ]
+}

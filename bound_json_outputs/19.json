@@ -1,0 +1,80 @@
+{
+    "id": 19,
+    "images": [
+        {
+            "prompt": "young asian woman posing in front of wooden bird houses ",
+            "paths": [
+                "bound_image_outputs/19/0-000.jpg",
+                "bound_image_outputs/19/0-001.jpg",
+                "bound_image_outputs/19/0-002.jpg",
+                "bound_image_outputs/19/0-003.jpg"
+            ],
+            "max_face_sim": 0.7185097932815552,
+            "min_face_sim": 0.07549253106117249,
+            "max_text_sim": 0.38330078125,
+            "min_text_sim": 0.29736328125,
+            "max_image_reward": 1.5962954759597778,
+            "min_image_reward": -1.7398183345794678
+        },
+        {
+            "prompt": "a beautiful asian woman is posing for the camera ",
+            "paths": [
+                "bound_image_outputs/19/1-000.jpg",
+                "bound_image_outputs/19/1-001.jpg",
+                "bound_image_outputs/19/1-002.jpg",
+                "bound_image_outputs/19/1-003.jpg"
+            ],
+            "max_face_sim": 0.7185097932815552,
+            "min_face_sim": 0.05250494182109833,
+            "max_text_sim": 0.300048828125,
+            "min_text_sim": 0.27880859375,
+            "max_image_reward": 0.4156108722090721,
+            "min_image_reward": -0.7152620798183812
+        },
+        {
+            "prompt": "a woman standing next to a body of water ",
+            "paths": [
+                "bound_image_outputs/19/2-000.jpg",
+                "bound_image_outputs/19/2-001.jpg",
+                "bound_image_outputs/19/2-002.jpg",
+                "bound_image_outputs/19/2-003.jpg"
+            ],
+            "max_face_sim": 0.7185097932815552,
+            "min_face_sim": -0.004570406395941973,
+            "max_text_sim": 0.31396484375,
+            "min_text_sim": 0.2332763671875,
+            "max_image_reward": 1.677804946899414,
+            "min_image_reward": -1.9134969578848944
+        },
+        {
+            "prompt": "an asian woman with blue hair wearing a denim jacket ",
+            "paths": [
+                "bound_image_outputs/19/3-000.jpg",
+                "bound_image_outputs/19/3-001.jpg",
+                "bound_image_outputs/19/3-002.jpg",
+                "bound_image_outputs/19/3-003.jpg"
+            ],
+            "max_face_sim": 0.7185097932815552,
+            "min_face_sim": 0.007387890480458736,
+            "max_text_sim": 0.35546875,
+            "min_text_sim": 0.231201171875,
+            "max_image_reward": 1.8705142736434937,
+            "min_image_reward": -2.25830782784356
+        },
+        {
+            "prompt": "a woman sitting in a chair with a cup of coffee ",
+            "paths": [
+                "bound_image_outputs/19/4-000.jpg",
+                "bound_image_outputs/19/4-001.jpg",
+                "bound_image_outputs/19/4-002.jpg",
+                "bound_image_outputs/19/4-003.jpg"
+            ],
+            "max_face_sim": 0.7185097932815552,
+            "min_face_sim": -0.011645806021988392,
+            "max_text_sim": 0.284912109375,
+            "min_text_sim": 0.197265625,
+            "max_image_reward": -0.09101139008998871,
+            "min_image_reward": -2.220888614654541
+        }
+    ]
+}

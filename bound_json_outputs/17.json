@@ -1,0 +1,80 @@
+{
+    "id": 17,
+    "images": [
+        {
+            "prompt": "a woman sitting on a chair with a cup of coffee ",
+            "paths": [
+                "bound_image_outputs/17/0-000.jpg",
+                "bound_image_outputs/17/0-001.jpg",
+                "bound_image_outputs/17/0-002.jpg",
+                "bound_image_outputs/17/0-003.jpg"
+            ],
+            "max_face_sim": 0.8021013140678406,
+            "min_face_sim": 0.014883330091834068,
+            "max_text_sim": 0.29150390625,
+            "min_text_sim": 0.212158203125,
+            "max_image_reward": 0.9034520983695984,
+            "min_image_reward": -2.1464247703552246
+        },
+        {
+            "prompt": "a woman in red and white striped shirt and sunglasses ",
+            "paths": [
+                "bound_image_outputs/17/1-000.jpg",
+                "bound_image_outputs/17/1-001.jpg",
+                "bound_image_outputs/17/1-002.jpg",
+                "bound_image_outputs/17/1-003.jpg"
+            ],
+            "max_face_sim": 0.8021013140678406,
+            "min_face_sim": -0.05892027169466019,
+            "max_text_sim": 0.351806640625,
+            "min_text_sim": 0.184814453125,
+            "max_image_reward": 1.2097163274884224,
+            "min_image_reward": -2.2031633172716414
+        },
+        {
+            "prompt": "a woman with long brown hair posing for the camera ",
+            "paths": [
+                "bound_image_outputs/17/2-000.jpg",
+                "bound_image_outputs/17/2-001.jpg",
+                "bound_image_outputs/17/2-002.jpg",
+                "bound_image_outputs/17/2-003.jpg"
+            ],
+            "max_face_sim": 0.8021013140678406,
+            "min_face_sim": -0.07892469316720963,
+            "max_text_sim": 0.283447265625,
+            "min_text_sim": 0.25,
+            "max_image_reward": 0.7345978170633316,
+            "min_image_reward": -0.29763104234422955
+        },
+        {
+            "prompt": "a young woman wearing sunglasses and a denim shirt ",
+            "paths": [
+                "bound_image_outputs/17/3-000.jpg",
+                "bound_image_outputs/17/3-001.jpg",
+                "bound_image_outputs/17/3-002.jpg",
+                "bound_image_outputs/17/3-003.jpg"
+            ],
+            "max_face_sim": 0.8021013140678406,
+            "min_face_sim": 0.03981604054570198,
+            "max_text_sim": 0.339111328125,
+            "min_text_sim": 0.2137451171875,
+            "max_image_reward": 1.0706597790122032,
+            "min_image_reward": -2.177118641989572
+        },
+        {
+            "prompt": "a woman in an orange blazer holding a purse ",
+            "paths": [
+                "bound_image_outputs/17/4-000.jpg",
+                "bound_image_outputs/17/4-001.jpg",
+                "bound_image_outputs/17/4-002.jpg",
+                "bound_image_outputs/17/4-003.jpg"
+            ],
+            "max_face_sim": 0.8021013140678406,
+            "min_face_sim": 0.007852793671190739,
+            "max_text_sim": 0.34130859375,
+            "min_text_sim": 0.191162109375,
+            "max_image_reward": 1.5664650201797485,
+            "min_image_reward": -2.2458248819623674
+        }
+    ]
+}

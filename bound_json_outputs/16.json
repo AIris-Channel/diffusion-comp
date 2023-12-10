@@ -1,0 +1,80 @@
+{
+    "id": 16,
+    "images": [
+        {
+            "prompt": "a young asian woman wearing sunglasses and holding a cake ",
+            "paths": [
+                "bound_image_outputs/16/0-000.jpg",
+                "bound_image_outputs/16/0-001.jpg",
+                "bound_image_outputs/16/0-002.jpg",
+                "bound_image_outputs/16/0-003.jpg"
+            ],
+            "max_face_sim": 0.8470459580421448,
+            "min_face_sim": -0.0010490206768736243,
+            "max_text_sim": 0.34130859375,
+            "min_text_sim": 0.2320556640625,
+            "max_image_reward": 0.04337206482887268,
+            "min_image_reward": -2.1854847272237143
+        },
+        {
+            "prompt": "a young asian woman wearing a blue top and necklace ",
+            "paths": [
+                "bound_image_outputs/16/1-000.jpg",
+                "bound_image_outputs/16/1-001.jpg",
+                "bound_image_outputs/16/1-002.jpg",
+                "bound_image_outputs/16/1-003.jpg"
+            ],
+            "max_face_sim": 0.8470459580421448,
+            "min_face_sim": 0.016044652089476585,
+            "max_text_sim": 0.37109375,
+            "min_text_sim": 0.2198486328125,
+            "max_image_reward": 1.35840505361557,
+            "min_image_reward": -1.9279420375823975
+        },
+        {
+            "prompt": "an asian woman with long brown hair posing for the camera ",
+            "paths": [
+                "bound_image_outputs/16/2-000.jpg",
+                "bound_image_outputs/16/2-001.jpg",
+                "bound_image_outputs/16/2-002.jpg",
+                "bound_image_outputs/16/2-003.jpg"
+            ],
+            "max_face_sim": 0.8470459580421448,
+            "min_face_sim": 0.02711433172225952,
+            "max_text_sim": 0.306884765625,
+            "min_text_sim": 0.241455078125,
+            "max_image_reward": 0.15534529462456703,
+            "min_image_reward": -1.9292996724446614
+        },
+        {
+            "prompt": "an asian woman wearing a red scarf and a black top ",
+            "paths": [
+                "bound_image_outputs/16/3-000.jpg",
+                "bound_image_outputs/16/3-001.jpg",
+                "bound_image_outputs/16/3-002.jpg",
+                "bound_image_outputs/16/3-003.jpg"
+            ],
+            "max_face_sim": 0.8470459580421448,
+            "min_face_sim": 0.015025665052235126,
+            "max_text_sim": 0.32861328125,
+            "min_text_sim": 0.2061767578125,
+            "max_image_reward": 1.279074814170599,
+            "min_image_reward": -2.2179550329844155
+        },
+        {
+            "prompt": "a woman sitting in front of a brick wall with yellow flowers ",
+            "paths": [
+                "bound_image_outputs/16/4-000.jpg",
+                "bound_image_outputs/16/4-001.jpg",
+                "bound_image_outputs/16/4-002.jpg",
+                "bound_image_outputs/16/4-003.jpg"
+            ],
+            "max_face_sim": 0.8470459580421448,
+            "min_face_sim": 0.025391893461346626,
+            "max_text_sim": 0.327880859375,
+            "min_text_sim": 0.221923828125,
+            "max_image_reward": 1.9591801762580872,
+            "min_image_reward": -2.155100663503011
+        }
+    ]
+}

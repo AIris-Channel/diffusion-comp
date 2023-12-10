@@ -1,0 +1,80 @@
+{
+    "id": 20,
+    "images": [
+        {
+            "prompt": "an asian woman in a red dress posing for the camera ",
+            "paths": [
+                "bound_image_outputs/20/0-000.jpg",
+                "bound_image_outputs/20/0-001.jpg",
+                "bound_image_outputs/20/0-002.jpg",
+                "bound_image_outputs/20/0-003.jpg"
+            ],
+            "max_face_sim": 0.8887746334075928,
+            "min_face_sim": -0.051208797842264175,
+            "max_text_sim": 0.350830078125,
+            "min_text_sim": 0.239501953125,
+            "max_image_reward": 0.8281560763716698,
+            "min_image_reward": 0.7462454537550608
+        },
+        {
+            "prompt": "a woman sitting at a table with her hand on her chin ",
+            "paths": [
+                "bound_image_outputs/20/1-000.jpg",
+                "bound_image_outputs/20/1-001.jpg",
+                "bound_image_outputs/20/1-002.jpg",
+                "bound_image_outputs/20/1-003.jpg"
+            ],
+            "max_face_sim": 0.8887746334075928,
+            "min_face_sim": -0.05405900254845619,
+            "max_text_sim": 0.26904296875,
+            "min_text_sim": 0.1834716796875,
+            "max_image_reward": 1.2265662252902985,
+            "min_image_reward": -1.986775537331899
+        },
+        {
+            "prompt": "a woman with long black hair posing for a selfie in a gym ",
+            "paths": [
+                "bound_image_outputs/20/2-000.jpg",
+                "bound_image_outputs/20/2-001.jpg",
+                "bound_image_outputs/20/2-002.jpg",
+                "bound_image_outputs/20/2-003.jpg"
+            ],
+            "max_face_sim": 0.8887746334075928,
+            "min_face_sim": -0.007645310368388891,
+            "max_text_sim": 0.359619140625,
+            "min_text_sim": 0.1669921875,
+            "max_image_reward": 1.0705976113677025,
+            "min_image_reward": -1.9438818494478862
+        },
+        {
+            "prompt": "a woman holding up a glass of wine while sitting at a table ",
+            "paths": [
+                "bound_image_outputs/20/3-000.jpg",
+                "bound_image_outputs/20/3-001.jpg",
+                "bound_image_outputs/20/3-002.jpg",
+                "bound_image_outputs/20/3-003.jpg"
+            ],
+            "max_face_sim": 0.8887746334075928,
+            "min_face_sim": -0.025239842012524605,
+            "max_text_sim": 0.310791015625,
+            "min_text_sim": 0.1614990234375,
+            "max_image_reward": -0.30072300508618355,
+            "min_image_reward": -2.122995376586914
+        },
+        {
+            "prompt": "a young asian woman laying on a bed ",
+            "paths": [
+                "bound_image_outputs/20/4-000.jpg",
+                "bound_image_outputs/20/4-001.jpg",
+                "bound_image_outputs/20/4-002.jpg",
+                "bound_image_outputs/20/4-003.jpg"
+            ],
+            "max_face_sim": 0.8887746334075928,
+            "min_face_sim": -0.05836167931556702,
+            "max_text_sim": 0.317626953125,
+            "min_text_sim": 0.1806640625,
+            "max_image_reward": 0.24390657432377338,
+            "min_image_reward": -2.1659140984217324
+        }
+    ]
+}

@@ -1,0 +1,95 @@
+{
+    "id": 3,
+    "images": [
+        {
+            "prompt": "a woman in a red dress and sunglasses posing for the camera ",
+            "paths": [
+                "bound_image_outputs/3/0-000.jpg",
+                "bound_image_outputs/3/0-001.jpg",
+                "bound_image_outputs/3/0-002.jpg",
+                "bound_image_outputs/3/0-003.jpg"
+            ],
+            "max_face_sim": 0.6959819197654724,
+            "min_face_sim": 0.03318978101015091,
+            "max_text_sim": 0.33154296875,
+            "min_text_sim": 0.226806640625,
+            "max_image_reward": 0.5874022394418716,
+            "min_image_reward": -2.2680532251085554
+        },
+        {
+            "prompt": "a woman in a black shirt posing for the camera ",
+            "paths": [
+                "bound_image_outputs/3/1-000.jpg",
+                "bound_image_outputs/3/1-001.jpg",
+                "bound_image_outputs/3/1-002.jpg",
+                "bound_image_outputs/3/1-003.jpg"
+            ],
+            "max_face_sim": 0.6959819197654724,
+            "min_face_sim": -0.021476449444890022,
+            "max_text_sim": 0.281494140625,
+            "min_text_sim": 0.2337646484375,
+            "max_image_reward": 1.4340190291404724,
+            "min_image_reward": -2.259479522705078
+        },
+        {
+            "prompt": "a woman holding a dog in front of a christmas tree ",
+            "paths": [
+                "bound_image_outputs/3/2-000.jpg",
+                "bound_image_outputs/3/2-001.jpg",
+                "bound_image_outputs/3/2-002.jpg",
+                "bound_image_outputs/3/2-003.jpg"
+            ],
+            "max_face_sim": 0.6959819197654724,
+            "min_face_sim": -0.0031077307648956776,
+            "max_text_sim": 0.323974609375,
+            "min_text_sim": 0.174560546875,
+            "max_image_reward": 1.0520953834056854,
+            "min_image_reward": -2.2557325022561208
+        },
+        {
+            "prompt": "a young asian woman wearing a white top ",
+            "paths": [
+                "bound_image_outputs/3/3-000.jpg",
+                "bound_image_outputs/3/3-001.jpg",
+                "bound_image_outputs/3/3-002.jpg",
+                "bound_image_outputs/3/3-003.jpg"
+            ],
+            "max_face_sim": 0.6959819197654724,
+            "min_face_sim": 0.05652344226837158,
+            "max_text_sim": 0.322509765625,
+            "min_text_sim": 0.291015625,
+            "max_image_reward": 1.0274053290486336,
+            "min_image_reward": -0.730993315577507
+        },
+        {
+            "prompt": "an asian woman with long black hair posing for a selfie ",
+            "paths": [
+                "bound_image_outputs/3/4-000.jpg",
+                "bound_image_outputs/3/4-001.jpg",
+                "bound_image_outputs/3/4-002.jpg",
+                "bound_image_outputs/3/4-003.jpg"
+            ],
+            "max_face_sim": 0.6959819197654724,
+            "min_face_sim": 0.007890813983976841,
+            "max_text_sim": 0.3271484375,
+            "min_text_sim": 0.24853515625,
+            "max_image_reward": 0.6172628067433834,
+            "min_image_reward": -2.0280021939958846
+        },
+        {
+            "prompt": "an asian woman is taking a selfie in the middle of the night ",
+            "paths": [
+                "bound_image_outputs/3/5-000.jpg",
+                "bound_image_outputs/3/5-001.jpg",
+                "bound_image_outputs/3/5-002.jpg",
+                "bound_image_outputs/3/5-003.jpg"
+            ],
+            "max_face_sim": 0.6959819197654724,
+            "min_face_sim": 0.04640347138047218,
+            "max_text_sim": 0.31005859375,
+            "min_text_sim": 0.237548828125,
+            "max_image_reward": 1.182632103562355,
+            "min_image_reward": -2.0565790789467946
+        }
+    ]
+}

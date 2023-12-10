@@ -1,0 +1,95 @@
+{
+    "id": 5,
+    "images": [
+        {
+            "prompt": "a young asian woman in a dress posing for the camera ",
+            "paths": [
+                "bound_image_outputs/5/0-000.jpg",
+                "bound_image_outputs/5/0-001.jpg",
+                "bound_image_outputs/5/0-002.jpg",
+                "bound_image_outputs/5/0-003.jpg"
+            ],
+            "max_face_sim": 0.6794412136077881,
+            "min_face_sim": 0.054249197244644165,
+            "max_text_sim": 0.286865234375,
+            "min_text_sim": 0.2646484375,
+            "max_image_reward": 0.44937360286712646,
+            "min_image_reward": -0.8775892108678818
+        },
+        {
+            "prompt": "an asian woman in a red bikini posing for the camera ",
+            "paths": [
+                "bound_image_outputs/5/1-000.jpg",
+                "bound_image_outputs/5/1-001.jpg",
+                "bound_image_outputs/5/1-002.jpg",
+                "bound_image_outputs/5/1-003.jpg"
+            ],
+            "max_face_sim": 0.6794412136077881,
+            "min_face_sim": 0.04247397556900978,
+            "max_text_sim": 0.357421875,
+            "min_text_sim": 0.202880859375,
+            "max_image_reward": 1.7739470601081848,
+            "min_image_reward": -2.2515081465244293
+        },
+        {
+            "prompt": "a woman in a black and white shirt taking a selfie ",
+            "paths": [
+                "bound_image_outputs/5/2-000.jpg",
+                "bound_image_outputs/5/2-001.jpg",
+                "bound_image_outputs/5/2-002.jpg",
+                "bound_image_outputs/5/2-003.jpg"
+            ],
+            "max_face_sim": 0.6794412136077881,
+            "min_face_sim": 0.07003360986709595,
+            "max_text_sim": 0.314453125,
+            "min_text_sim": 0.2034912109375,
+            "max_image_reward": 0.536817004904151,
+            "min_image_reward": -2.0601822435855865
+        },
+        {
+            "prompt": "a young asian woman with long hair and bangs ",
+            "paths": [
+                "bound_image_outputs/5/3-000.jpg",
+                "bound_image_outputs/5/3-001.jpg",
+                "bound_image_outputs/5/3-002.jpg",
+                "bound_image_outputs/5/3-003.jpg"
+            ],
+            "max_face_sim": 0.6794412136077881,
+            "min_face_sim": -0.002124512568116188,
+            "max_text_sim": 0.301025390625,
+            "min_text_sim": 0.2445068359375,
+            "max_image_reward": 0.8091776296496391,
+            "min_image_reward": -1.7647468447685242
+        },
+        {
+            "prompt": "a woman sitting at a table with chopsticks in her hands ",
+            "paths": [
+                "bound_image_outputs/5/4-000.jpg",
+                "bound_image_outputs/5/4-001.jpg",
+                "bound_image_outputs/5/4-002.jpg",
+                "bound_image_outputs/5/4-003.jpg"
+            ],
+            "max_face_sim": 0.6794412136077881,
+            "min_face_sim": 0.024295387789607048,
+            "max_text_sim": 0.32568359375,
+            "min_text_sim": 0.223388671875,
+            "max_image_reward": 0.22092698514461517,
+            "min_image_reward": -2.16818043589592
+        },
+        {
+            "prompt": "a young asian woman in a white polo shirt ",
+            "paths": [
+                "bound_image_outputs/5/5-000.jpg",
+                "bound_image_outputs/5/5-001.jpg",
+                "bound_image_outputs/5/5-002.jpg",
+                "bound_image_outputs/5/5-003.jpg"
+            ],
+            "max_face_sim": 0.6794412136077881,
+            "min_face_sim": 0.0373038686811924,
+            "max_text_sim": 0.310546875,
+            "min_text_sim": 0.2406005859375,
+            "max_image_reward": 1.570714220404625,
+            "min_image_reward": -2.1680111289024353
+        }
+    ]
+}

@@ -1,0 +1,80 @@
+{
+    "id": 13,
+    "images": [
+        {
+            "prompt": "a woman in a black shirt posing for the camera ",
+            "paths": [
+                "bound_image_outputs/13/0-000.jpg",
+                "bound_image_outputs/13/0-001.jpg",
+                "bound_image_outputs/13/0-002.jpg",
+                "bound_image_outputs/13/0-003.jpg"
+            ],
+            "max_face_sim": 0.775409460067749,
+            "min_face_sim": 0.01254031527787447,
+            "max_text_sim": 0.2900390625,
+            "min_text_sim": 0.245361328125,
+            "max_image_reward": 0.8315780460834503,
+            "min_image_reward": -2.1838053266207376
+        },
+        {
+            "prompt": "a woman in a green shirt and sunglasses sitting in the back seat of a car ",
+            "paths": [
+                "bound_image_outputs/13/1-000.jpg",
+                "bound_image_outputs/13/1-001.jpg",
+                "bound_image_outputs/13/1-002.jpg",
+                "bound_image_outputs/13/1-003.jpg"
+            ],
+            "max_face_sim": 0.775409460067749,
+            "min_face_sim": 0.021234435960650444,
+            "max_text_sim": 0.358154296875,
+            "min_text_sim": 0.130615234375,
+            "max_image_reward": 1.240072786808014,
+            "min_image_reward": -2.278793454170227
+        },
+        {
+            "prompt": "a young asian woman wearing an adidas sweatshirt ",
+            "paths": [
+                "bound_image_outputs/13/2-000.jpg",
+                "bound_image_outputs/13/2-001.jpg",
+                "bound_image_outputs/13/2-002.jpg",
+                "bound_image_outputs/13/2-003.jpg"
+            ],
+            "max_face_sim": 0.775409460067749,
+            "min_face_sim": -0.00223523355089128,
+            "max_text_sim": 0.347900390625,
+            "min_text_sim": 0.198974609375,
+            "max_image_reward": 1.6920379996299744,
+            "min_image_reward": -2.190302054087321
+        },
+        {
+            "prompt": "a woman with long brown hair is taking a selfie ",
+            "paths": [
+                "bound_image_outputs/13/3-000.jpg",
+                "bound_image_outputs/13/3-001.jpg",
+                "bound_image_outputs/13/3-002.jpg",
+                "bound_image_outputs/13/3-003.jpg"
+            ],
+            "max_face_sim": 0.775409460067749,
+            "min_face_sim": 0.027442967519164085,
+            "max_text_sim": 0.29345703125,
+            "min_text_sim": 0.2108154296875,
+            "max_image_reward": 0.6464024186134338,
+            "min_image_reward": -2.1242358088493347
+        },
+        {
+            "prompt": "a woman in a bra and panties sitting on a bed with a butterfly ",
+            "paths": [
+                "bound_image_outputs/13/4-000.jpg",
+                "bound_image_outputs/13/4-001.jpg",
+                "bound_image_outputs/13/4-002.jpg",
+                "bound_image_outputs/13/4-003.jpg"
+            ],
+            "max_face_sim": 0.775409460067749,
+            "min_face_sim": -0.042807720601558685,
+            "max_text_sim": 0.33154296875,
+            "min_text_sim": 0.186279296875,
+            "max_image_reward": 0.42422153567895293,
+            "min_image_reward": -2.277758081754049
+        }
+    ]
+}

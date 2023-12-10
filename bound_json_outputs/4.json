@@ -1,0 +1,65 @@
+{
+    "id": 4,
+    "images": [
+        {
+            "prompt": "a young woman wearing a blue jacket and striped shirt ",
+            "paths": [
+                "bound_image_outputs/4/0-000.jpg",
+                "bound_image_outputs/4/0-001.jpg",
+                "bound_image_outputs/4/0-002.jpg",
+                "bound_image_outputs/4/0-003.jpg"
+            ],
+            "max_face_sim": 0.6571889519691467,
+            "min_face_sim": 0.019152935594320297,
+            "max_text_sim": 0.341796875,
+            "min_text_sim": 0.14794921875,
+            "max_image_reward": 0.732779249548912,
+            "min_image_reward": -2.2726513544718423
+        },
+        {
+            "prompt": "a woman in a blue sweater is posing for the camera ",
+            "paths": [
+                "bound_image_outputs/4/1-000.jpg",
+                "bound_image_outputs/4/1-001.jpg",
+                "bound_image_outputs/4/1-002.jpg",
+                "bound_image_outputs/4/1-003.jpg"
+            ],
+            "max_face_sim": 0.6571889519691467,
+            "min_face_sim": -0.03156953305006027,
+            "max_text_sim": 0.32666015625,
+            "min_text_sim": 0.1995849609375,
+            "max_image_reward": 1.0226937308907509,
+            "min_image_reward": -2.2731884717941284
+        },
+        {
+            "prompt": "a woman with a watch on her wrist standing in front of a crosswalk ",
+            "paths": [
+                "bound_image_outputs/4/2-000.jpg",
+                "bound_image_outputs/4/2-001.jpg",
+                "bound_image_outputs/4/2-002.jpg",
+                "bound_image_outputs/4/2-003.jpg"
+            ],
+            "max_face_sim": 0.6571889519691467,
+            "min_face_sim": 0.05062669515609741,
+            "max_text_sim": 0.2880859375,
+            "min_text_sim": 0.1436767578125,
+            "max_image_reward": -0.3816458731889725,
+            "min_image_reward": -2.2438672383626304
+        },
+        {
+            "prompt": "a woman sitting at a table with a drink in front of her ",
+            "paths": [
+                "bound_image_outputs/4/3-000.jpg",
+                "bound_image_outputs/4/3-001.jpg",
+                "bound_image_outputs/4/3-002.jpg",
+                "bound_image_outputs/4/3-003.jpg"
+            ],
+            "max_face_sim": 0.6571889519691467,
+            "min_face_sim": 0.015565353445708752,
+            "max_text_sim": 0.28662109375,
+            "min_text_sim": 0.194091796875,
+            "max_image_reward": 1.0986156910657883,
+            "min_image_reward": -2.2394319772720337
+        }
+    ]
+}

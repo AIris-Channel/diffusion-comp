@@ -1,0 +1,80 @@
+{
+    "id": 12,
+    "images": [
+        {
+            "prompt": "an asian woman holding her finger up to her face ",
+            "paths": [
+                "bound_image_outputs/12/0-000.jpg",
+                "bound_image_outputs/12/0-001.jpg",
+                "bound_image_outputs/12/0-002.jpg",
+                "bound_image_outputs/12/0-003.jpg"
+            ],
+            "max_face_sim": 0.717583954334259,
+            "min_face_sim": 0.10841409862041473,
+            "max_text_sim": 0.31640625,
+            "min_text_sim": 0.204833984375,
+            "max_image_reward": 0.5716819986701012,
+            "min_image_reward": -1.952260360121727
+        },
+        {
+            "prompt": "a young asian woman wearing a hat and scarf ",
+            "paths": [
+                "bound_image_outputs/12/1-000.jpg",
+                "bound_image_outputs/12/1-001.jpg",
+                "bound_image_outputs/12/1-002.jpg",
+                "bound_image_outputs/12/1-003.jpg"
+            ],
+            "max_face_sim": 0.717583954334259,
+            "min_face_sim": 0.08850223571062088,
+            "max_text_sim": 0.330078125,
+            "min_text_sim": 0.1790771484375,
+            "max_image_reward": 1.5846790969371796,
+            "min_image_reward": -2.241323560476303
+        },
+        {
+            "prompt": "an asian woman in a blue dress sitting in the back seat of a car ",
+            "paths": [
+                "bound_image_outputs/12/2-000.jpg",
+                "bound_image_outputs/12/2-001.jpg",
+                "bound_image_outputs/12/2-002.jpg",
+                "bound_image_outputs/12/2-003.jpg"
+            ],
+            "max_face_sim": 0.717583954334259,
+            "min_face_sim": 0.08108419179916382,
+            "max_text_sim": 0.3798828125,
+            "min_text_sim": 0.217529296875,
+            "max_image_reward": 1.431094378232956,
+            "min_image_reward": -2.2361200749874115
+        },
+        {
+            "prompt": "a young asian woman wearing a green sweater and black scarf ",
+            "paths": [
+                "bound_image_outputs/12/3-000.jpg",
+                "bound_image_outputs/12/3-001.jpg",
+                "bound_image_outputs/12/3-002.jpg",
+                "bound_image_outputs/12/3-003.jpg"
+            ],
+            "max_face_sim": 0.717583954334259,
+            "min_face_sim": 0.03862354904413223,
+            "max_text_sim": 0.375244140625,
+            "min_text_sim": 0.149169921875,
+            "max_image_reward": 0.546839751303196,
+            "min_image_reward": -2.2756524682044983
+        },
+        {
+            "prompt": "a woman in a pink dress posing for the camera ",
+            "paths": [
+                "bound_image_outputs/12/4-000.jpg",
+                "bound_image_outputs/12/4-001.jpg",
+                "bound_image_outputs/12/4-002.jpg",
+                "bound_image_outputs/12/4-003.jpg"
+            ],
+            "max_face_sim": 0.717583954334259,
+            "min_face_sim": -0.054970890283584595,
+            "max_text_sim": 0.30224609375,
+            "min_text_sim": 0.1939697265625,
+            "max_image_reward": 0.782823771238327,
+            "min_image_reward": -2.119417205452919
+        }
+    ]
+}

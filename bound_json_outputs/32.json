@@ -1,0 +1,80 @@
+{
+    "id": 32,
+    "images": [
+        {
+            "prompt": "a woman with long black hair posing for a photo ",
+            "paths": [
+                "bound_image_outputs/32/0-000.jpg",
+                "bound_image_outputs/32/0-001.jpg",
+                "bound_image_outputs/32/0-002.jpg",
+                "bound_image_outputs/32/0-003.jpg"
+            ],
+            "max_face_sim": 0.8120768070220947,
+            "min_face_sim": -0.019816448912024498,
+            "max_text_sim": 0.291748046875,
+            "min_text_sim": 0.222900390625,
+            "max_image_reward": 0.42575946636497974,
+            "min_image_reward": -1.3315032124519348
+        },
+        {
+            "prompt": "a woman in a gold dress posing for the camera ",
+            "paths": [
+                "bound_image_outputs/32/1-000.jpg",
+                "bound_image_outputs/32/1-001.jpg",
+                "bound_image_outputs/32/1-002.jpg",
+                "bound_image_outputs/32/1-003.jpg"
+            ],
+            "max_face_sim": 0.8120768070220947,
+            "min_face_sim": 0.0012861074646934867,
+            "max_text_sim": 0.329345703125,
+            "min_text_sim": 0.22119140625,
+            "max_image_reward": 1.4556761980056763,
+            "min_image_reward": -2.209515849749247
+        },
+        {
+            "prompt": "an asian woman wearing a hat posing for a photo ",
+            "paths": [
+                "bound_image_outputs/32/2-000.jpg",
+                "bound_image_outputs/32/2-001.jpg",
+                "bound_image_outputs/32/2-002.jpg",
+                "bound_image_outputs/32/2-003.jpg"
+            ],
+            "max_face_sim": 0.8120768070220947,
+            "min_face_sim": 0.07892628759145737,
+            "max_text_sim": 0.304931640625,
+            "min_text_sim": 0.2509765625,
+            "max_image_reward": 0.24918134603649378,
+            "min_image_reward": -1.7379693786303203
+        },
+        {
+            "prompt": "an asian woman posing in front of a staircase ",
+            "paths": [
+                "bound_image_outputs/32/3-000.jpg",
+                "bound_image_outputs/32/3-001.jpg",
+                "bound_image_outputs/32/3-002.jpg",
+                "bound_image_outputs/32/3-003.jpg"
+            ],
+            "max_face_sim": 0.8120768070220947,
+            "min_face_sim": 0.05538518726825714,
+            "max_text_sim": 0.33154296875,
+            "min_text_sim": 0.2587890625,
+            "max_image_reward": 1.1878494322299957,
+            "min_image_reward": -1.98727943499883
+        },
+        {
+            "prompt": "an asian woman with red lipstick posing for the camera ",
+            "paths": [
+                "bound_image_outputs/32/4-000.jpg",
+                "bound_image_outputs/32/4-001.jpg",
+                "bound_image_outputs/32/4-002.jpg",
+                "bound_image_outputs/32/4-003.jpg"
+            ],
+            "max_face_sim": 0.8120768070220947,
+            "min_face_sim": 0.014211629517376423,
+            "max_text_sim": 0.305908203125,
+            "min_text_sim": 0.2452392578125,
+            "max_image_reward": 0.34692167304456234,
+            "min_image_reward": -2.0965653459231057
+        }
+    ]
+}

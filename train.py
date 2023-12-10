@@ -50,7 +50,7 @@ def train(config):
 
     autoencoder = libs.autoencoder.get_model(**config.autoencoder).to(device)
     # autoencoder = autoencoder.half()
-
+    import ipdb;ipdb.set_trace()
     clip_text_model = FrozenCLIPEmbedder(
         version=config.clip_text_model, device=device)
     clip_img_model, clip_img_model_preprocess = clip.load(
@@ -108,6 +108,9 @@ def train(config):
         adapter_modules.append(attn_proc)
 
     ip_adapter = IPAdapter(image_proj_model, adapter_modules)
+    state_dict = torch.load('model_output/final.ckpt/ip_adapter.pth', map_location=device)
+    state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+    ip_adapter.load_state_dict(state_dict)
     ip_adapter.to(device)
     print(f"Training params: {utils.cnt_params(ip_adapter)}")
 
@@ -228,7 +231,7 @@ def train(config):
         
     def loop():
         log_step = 0
-        eval_step = config.eval_interval
+        eval_step = 0#config.eval_interval
         save_step = config.save_interval
         
         best_score = float('-inf')

@@ -86,7 +86,7 @@ def get_config():
     config.n_iter = 6
     config.nrow = 4
     config.sample = d(
-        sample_steps=30,
+        sample_steps=16,
         scale=7.,
         t2i_cfg_mode='true_uncond'
     )

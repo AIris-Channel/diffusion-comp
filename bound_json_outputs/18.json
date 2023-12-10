@@ -1,0 +1,80 @@
+{
+    "id": 18,
+    "images": [
+        {
+            "prompt": "a woman holding a glass of beer with a smile on her face ",
+            "paths": [
+                "bound_image_outputs/18/0-000.jpg",
+                "bound_image_outputs/18/0-001.jpg",
+                "bound_image_outputs/18/0-002.jpg",
+                "bound_image_outputs/18/0-003.jpg"
+            ],
+            "max_face_sim": 0.8155185580253601,
+            "min_face_sim": 0.03588412329554558,
+            "max_text_sim": 0.33740234375,
+            "min_text_sim": 0.18896484375,
+            "max_image_reward": 1.796790361404419,
+            "min_image_reward": -2.1246190865834556
+        },
+        {
+            "prompt": "a woman sitting at a table with flowers in the background ",
+            "paths": [
+                "bound_image_outputs/18/1-000.jpg",
+                "bound_image_outputs/18/1-001.jpg",
+                "bound_image_outputs/18/1-002.jpg",
+                "bound_image_outputs/18/1-003.jpg"
+            ],
+            "max_face_sim": 0.8155185580253601,
+            "min_face_sim": 0.002040863735601306,
+            "max_text_sim": 0.29541015625,
+            "min_text_sim": 0.25830078125,
+            "max_image_reward": 1.5479828864336014,
+            "min_image_reward": -1.9344943364461262
+        },
+        {
+            "prompt": "a woman in a white t - shirt holding a jar of food ",
+            "paths": [
+                "bound_image_outputs/18/2-000.jpg",
+                "bound_image_outputs/18/2-001.jpg",
+                "bound_image_outputs/18/2-002.jpg",
+                "bound_image_outputs/18/2-003.jpg"
+            ],
+            "max_face_sim": 0.8155185580253601,
+            "min_face_sim": 0.00683410232886672,
+            "max_text_sim": 0.337890625,
+            "min_text_sim": 0.2333984375,
+            "max_image_reward": 1.6977543830871582,
+            "min_image_reward": -1.6667529304201405
+        },
+        {
+            "prompt": "an asian woman in a car with long hair ",
+            "paths": [
+                "bound_image_outputs/18/3-000.jpg",
+                "bound_image_outputs/18/3-001.jpg",
+                "bound_image_outputs/18/3-002.jpg",
+                "bound_image_outputs/18/3-003.jpg"
+            ],
+            "max_face_sim": 0.8155185580253601,
+            "min_face_sim": 0.005801662802696228,
+            "max_text_sim": 0.31298828125,
+            "min_text_sim": 0.21533203125,
+            "max_image_reward": 1.0191378742456436,
+            "min_image_reward": -2.179416537284851
+        },
+        {
+            "prompt": "an asian woman sitting at a desk holding a cell phone ",
+            "paths": [
+                "bound_image_outputs/18/4-000.jpg",
+                "bound_image_outputs/18/4-001.jpg",
+                "bound_image_outputs/18/4-002.jpg",
+                "bound_image_outputs/18/4-003.jpg"
+            ],
+            "max_face_sim": 0.8155185580253601,
+            "min_face_sim": 0.03260530158877373,
+            "max_text_sim": 0.311767578125,
+            "min_text_sim": 0.20654296875,
+            "max_image_reward": 0.3084992244839668,
+            "min_image_reward": -2.165192206700643
+        }
+    ]
+}

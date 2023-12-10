@@ -1,0 +1,95 @@
+{
+    "id": 2,
+    "images": [
+        {
+            "prompt": "a woman wearing a black hat and a white top ",
+            "paths": [
+                "bound_image_outputs/2/0-000.jpg",
+                "bound_image_outputs/2/0-001.jpg",
+                "bound_image_outputs/2/0-002.jpg",
+                "bound_image_outputs/2/0-003.jpg"
+            ],
+            "max_face_sim": 0.729262113571167,
+            "min_face_sim": 0.0063834423199296,
+            "max_text_sim": 0.308837890625,
+            "min_text_sim": 0.2379150390625,
+            "max_image_reward": 0.14519080519676208,
+            "min_image_reward": -1.718800738453865
+        },
+        {
+            "prompt": "a young asian woman with long black hair taking a selfie ",
+            "paths": [
+                "bound_image_outputs/2/1-000.jpg",
+                "bound_image_outputs/2/1-001.jpg",
+                "bound_image_outputs/2/1-002.jpg",
+                "bound_image_outputs/2/1-003.jpg"
+            ],
+            "max_face_sim": 0.729262113571167,
+            "min_face_sim": 0.004911096766591072,
+            "max_text_sim": 0.325927734375,
+            "min_text_sim": 0.209716796875,
+            "max_image_reward": -0.04775868309661746,
+            "min_image_reward": -1.9127293080091476
+        },
+        {
+            "prompt": "an asian woman in a white shirt and black bow tie is sitting under a tent ",
+            "paths": [
+                "bound_image_outputs/2/2-000.jpg",
+                "bound_image_outputs/2/2-001.jpg",
+                "bound_image_outputs/2/2-002.jpg",
+                "bound_image_outputs/2/2-003.jpg"
+            ],
+            "max_face_sim": 0.729262113571167,
+            "min_face_sim": 0.04030681774020195,
+            "max_text_sim": 0.3193359375,
+            "min_text_sim": 0.246337890625,
+            "max_image_reward": 0.22374631837010384,
+            "min_image_reward": -2.149321362376213
+        },
+        {
+            "prompt": "an asian woman with long hair is taking a selfie ",
+            "paths": [
+                "bound_image_outputs/2/3-000.jpg",
+                "bound_image_outputs/2/3-001.jpg",
+                "bound_image_outputs/2/3-002.jpg",
+                "bound_image_outputs/2/3-003.jpg"
+            ],
+            "max_face_sim": 0.729262113571167,
+            "min_face_sim": 0.054152656346559525,
+            "max_text_sim": 0.30224609375,
+            "min_text_sim": 0.2139892578125,
+            "max_image_reward": 0.4214251786470413,
+            "min_image_reward": -1.8690215796232224
+        },
+        {
+            "prompt": "a young woman sitting at a table in a classroom ",
+            "paths": [
+                "bound_image_outputs/2/4-000.jpg",
+                "bound_image_outputs/2/4-001.jpg",
+                "bound_image_outputs/2/4-002.jpg",
+                "bound_image_outputs/2/4-003.jpg"
+            ],
+            "max_face_sim": 0.729262113571167,
+            "min_face_sim": 0.007797685451805592,
+            "max_text_sim": 0.27490234375,
+            "min_text_sim": 0.17626953125,
+            "max_image_reward": 1.0038146935403347,
+            "min_image_reward": -2.2485462725162506
+        },
+        {
+            "prompt": "a young asian woman is posing for the camera ",
+            "paths": [
+                "bound_image_outputs/2/5-000.jpg",
+                "bound_image_outputs/2/5-001.jpg",
+                "bound_image_outputs/2/5-002.jpg",
+                "bound_image_outputs/2/5-003.jpg"
+            ],
+            "max_face_sim": 0.729262113571167,
+            "min_face_sim": -0.0007528550922870636,
+            "max_text_sim": 0.28369140625,
+            "min_text_sim": 0.269775390625,
+            "max_image_reward": 0.20565959997475147,
+            "min_image_reward": -1.2846286594867706
+        }
+    ]
+}

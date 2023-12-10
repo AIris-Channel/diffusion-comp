@@ -1,0 +1,80 @@
+{
+    "id": 21,
+    "images": [
+        {
+            "prompt": "a woman with long black hair wearing sunglasses in a car ",
+            "paths": [
+                "bound_image_outputs/21/0-000.jpg",
+                "bound_image_outputs/21/0-001.jpg",
+                "bound_image_outputs/21/0-002.jpg",
+                "bound_image_outputs/21/0-003.jpg"
+            ],
+            "max_face_sim": 0.8208663463592529,
+            "min_face_sim": -0.038048215210437775,
+            "max_text_sim": 0.3525390625,
+            "min_text_sim": 0.205078125,
+            "max_image_reward": 1.2785027921199799,
+            "min_image_reward": -2.1597536631992886
+        },
+        {
+            "prompt": "an asian woman with long hair posing for a selfie ",
+            "paths": [
+                "bound_image_outputs/21/1-000.jpg",
+                "bound_image_outputs/21/1-001.jpg",
+                "bound_image_outputs/21/1-002.jpg",
+                "bound_image_outputs/21/1-003.jpg"
+            ],
+            "max_face_sim": 0.8208663463592529,
+            "min_face_sim": 0.03788093104958534,
+            "max_text_sim": 0.3271484375,
+            "min_text_sim": 0.22509765625,
+            "max_image_reward": 0.1861699562978174,
+            "min_image_reward": 0.2721218594482967
+        },
+        {
+            "prompt": "a woman is taking a selfie in a store ",
+            "paths": [
+                "bound_image_outputs/21/2-000.jpg",
+                "bound_image_outputs/21/2-001.jpg",
+                "bound_image_outputs/21/2-002.jpg",
+                "bound_image_outputs/21/2-003.jpg"
+            ],
+            "max_face_sim": 0.8208663463592529,
+            "min_face_sim": -0.03636082634329796,
+            "max_text_sim": 0.2958984375,
+            "min_text_sim": 0.1873779296875,
+            "max_image_reward": 0.527625348418951,
+            "min_image_reward": -1.9935500962393624
+        },
+        {
+            "prompt": "a woman in a red dress sitting in a car ",
+            "paths": [
+                "bound_image_outputs/21/3-000.jpg",
+                "bound_image_outputs/21/3-001.jpg",
+                "bound_image_outputs/21/3-002.jpg",
+                "bound_image_outputs/21/3-003.jpg"
+            ],
+            "max_face_sim": 0.8208663463592529,
+            "min_face_sim": -2.3982000129763037e-05,
+            "max_text_sim": 0.337158203125,
+            "min_text_sim": 0.2113037109375,
+            "max_image_reward": 1.7273259162902832,
+            "min_image_reward": -2.2688582965305875
+        },
+        {
+            "prompt": "a woman sitting at a table with oysters and wine ",
+            "paths": [
+                "bound_image_outputs/21/4-000.jpg",
+                "bound_image_outputs/21/4-001.jpg",
+                "bound_image_outputs/21/4-002.jpg",
+                "bound_image_outputs/21/4-003.jpg"
+            ],
+            "max_face_sim": 0.8208663463592529,
+            "min_face_sim": -0.04297206178307533,
+            "max_text_sim": 0.346435546875,
+            "min_text_sim": 0.1824951171875,
+            "max_image_reward": 1.1111882328987122,
+            "min_image_reward": -2.210653305053711
+        }
+    ]
+}
